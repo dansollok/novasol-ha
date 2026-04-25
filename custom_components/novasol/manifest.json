@@ -1,0 +1,11 @@
+{
+  "domain": "novasol",
+  "name": "Novasol",
+  "version": "0.1.0",
+  "documentation": "https://github.com/dansollok/novasol-ha",
+  "codeowners": ["@dansollok"],
+  "requirements": [],
+  "dependencies": [],
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}
