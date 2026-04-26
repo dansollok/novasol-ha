@@ -76,6 +76,12 @@ SENSORS: tuple[NovaSolSensorDescription, ...] = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda d: d.get("ytd_income_dkk", 0),
     ),
+    NovaSolSensorDescription(
+        key="last_poll",
+        name="Last successful poll",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda d: d.get("last_poll"),
+    ),
 )
 
 

@@ -1,7 +1,7 @@
 """Tests for sensor value_fn lambdas."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -25,11 +25,14 @@ NEXT_BOOKING = {
     "is_owner_block":    False,
 }
 
+_NOW = datetime.now(timezone.utc)
+
 DATA_WITH_BOOKING = {
     "next_booking":   NEXT_BOOKING,
     "upcoming_count": 3,
     "ytd_income_dkk": 15000,
     "is_occupied":    False,
+    "last_poll":      _NOW,
 }
 
 DATA_EMPTY = {
@@ -37,6 +40,7 @@ DATA_EMPTY = {
     "upcoming_count": 0,
     "ytd_income_dkk": 0,
     "is_occupied":    False,
+    "last_poll":      None,
 }
 
 # ── next_checkin ──────────────────────────────────────────────────────────────
@@ -111,3 +115,14 @@ def test_ytd_income_value():
 
 def test_ytd_income_zero_when_empty():
     assert _value("ytd_income", DATA_EMPTY) == 0
+
+
+# ── last_poll ─────────────────────────────────────────────────────────────────
+
+def test_last_poll_returns_datetime():
+    val = _value("last_poll", DATA_WITH_BOOKING)
+    assert val == _NOW
+
+
+def test_last_poll_none_before_first_successful_fetch():
+    assert _value("last_poll", DATA_EMPTY) is None

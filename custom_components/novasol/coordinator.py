@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -127,4 +127,5 @@ class NovaSolCoordinator(DataUpdateCoordinator):
             "is_occupied":      occupied_booking is not None,
             "ytd_income_dkk":   ytd_income,
             "upcoming_count":   len(future_customer),
+            "last_poll":        datetime.now(timezone.utc),
         }
