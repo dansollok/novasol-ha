@@ -160,6 +160,7 @@ class NovaSolApiClient:
         to_date: date | None = None,
     ) -> list[dict]:
         """Fetch the full booking list for a property."""
+        _LOGGER.debug("GET bookinglist %s/%s %s→%s", property_id, unit_id, from_date, to_date)
         await self.ensure_valid_token()
 
         today = date.today()

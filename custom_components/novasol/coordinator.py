@@ -43,6 +43,7 @@ class NovaSolCoordinator(DataUpdateCoordinator):
         self.unit_id = unit_id
 
     async def _async_update_data(self) -> dict:
+        _LOGGER.debug("Fetching bookings for property %s", self.property_id)
         try:
             bookings = await self._client.get_bookings(
                 self.property_id,
@@ -55,9 +56,17 @@ class NovaSolCoordinator(DataUpdateCoordinator):
         except Exception as exc:
             raise UpdateFailed(f"Error fetching bookings: {exc}") from exc
 
+        customer = [b for b in bookings if not b["is_owner_block"]]
+        owner    = [b for b in bookings if     b["is_owner_block"]]
+        _LOGGER.debug(
+            "Fetched %d bookings (%d customer, %d owner blocks)",
+            len(bookings), len(customer), len(owner),
+        )
+
         # Persist any token changes (refresh may have rotated the tokens)
         tokens = self._client.dump_tokens()
         if tokens["access_token"] != self._entry.data.get(CONF_ACCESS_TOKEN):
+            _LOGGER.debug("Access token rotated — persisting new tokens to config entry")
             self.hass.config_entries.async_update_entry(
                 self._entry,
                 data={
@@ -69,8 +78,6 @@ class NovaSolCoordinator(DataUpdateCoordinator):
             )
 
         today = date.today()
-        customer = [b for b in bookings if not b["is_owner_block"]]
-        owner    = [b for b in bookings if     b["is_owner_block"]]
 
         # Next upcoming customer booking
         future_customer = sorted(
@@ -78,6 +85,15 @@ class NovaSolCoordinator(DataUpdateCoordinator):
             key=lambda b: b["check_in"],
         )
         next_booking = future_customer[0] if future_customer else None
+        if next_booking:
+            _LOGGER.debug(
+                "Next booking: %s (%s) checking in %s",
+                next_booking.get("guest_name", "unknown"),
+                next_booking["booking_id"],
+                next_booking["check_in"],
+            )
+        else:
+            _LOGGER.debug("No upcoming customer bookings found")
 
         # Is the property occupied right now?
         occupied_booking = next(
@@ -87,6 +103,12 @@ class NovaSolCoordinator(DataUpdateCoordinator):
             ),
             None,
         )
+        if occupied_booking:
+            _LOGGER.info(
+                "Property currently occupied by %s (checkout %s)",
+                occupied_booking.get("guest_name", "unknown"),
+                occupied_booking["check_out"],
+            )
 
         # YTD income
         ytd_income = sum(
@@ -94,14 +116,15 @@ class NovaSolCoordinator(DataUpdateCoordinator):
             for b in customer
             if b["booked_on"] and b["booked_on"].startswith(str(today.year))
         )
+        _LOGGER.debug("YTD income: %d DKK", ytd_income)
 
         return {
-            "bookings":        bookings,
-            "customer":        customer,
-            "owner_blocks":    owner,
-            "next_booking":    next_booking,
+            "bookings":         bookings,
+            "customer":         customer,
+            "owner_blocks":     owner,
+            "next_booking":     next_booking,
             "occupied_booking": occupied_booking,
-            "is_occupied":     occupied_booking is not None,
-            "ytd_income_dkk":  ytd_income,
-            "upcoming_count":  len(future_customer),
+            "is_occupied":      occupied_booking is not None,
+            "ytd_income_dkk":   ytd_income,
+            "upcoming_count":   len(future_customer),
         }
