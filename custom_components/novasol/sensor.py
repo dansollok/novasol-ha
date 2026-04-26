@@ -20,6 +20,33 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import NovaSolCoordinator
 
+# Vehicle-registration nationality codes used by the Novasol API → full country name
+_NATIONALITY: dict[str, str] = {
+    "A":   "Austria",
+    "B":   "Belgium",
+    "CH":  "Switzerland",
+    "CZ":  "Czech Republic",
+    "D":   "Germany",
+    "DK":  "Denmark",
+    "E":   "Spain",
+    "F":   "France",
+    "FIN": "Finland",
+    "GB":  "United Kingdom",
+    "I":   "Italy",
+    "L":   "Luxembourg",
+    "N":   "Norway",
+    "NL":  "Netherlands",
+    "P":   "Portugal",
+    "PL":  "Poland",
+    "S":   "Sweden",
+    "SK":  "Slovakia",
+    "USA": "United States",
+}
+
+
+def _next(d: dict) -> dict | None:
+    return d.get("next_booking")
+
 
 @dataclass(frozen=True, kw_only=True)
 class NovaSolSensorDescription(SensorEntityDescription):
@@ -32,8 +59,7 @@ SENSORS: tuple[NovaSolSensorDescription, ...] = (
         name="Next check-in",
         device_class=SensorDeviceClass.DATE,
         value_fn=lambda d: (
-            date.fromisoformat(d["next_booking"]["check_in"])
-            if d.get("next_booking") else None
+            date.fromisoformat(_next(d)["check_in"]) if _next(d) else None
         ),
     ),
     NovaSolSensorDescription(
@@ -41,8 +67,7 @@ SENSORS: tuple[NovaSolSensorDescription, ...] = (
         name="Next check-out",
         device_class=SensorDeviceClass.DATE,
         value_fn=lambda d: (
-            date.fromisoformat(d["next_booking"]["check_out"])
-            if d.get("next_booking") else None
+            date.fromisoformat(_next(d)["check_out"]) if _next(d) else None
         ),
     ),
     NovaSolSensorDescription(
@@ -51,16 +76,72 @@ SENSORS: tuple[NovaSolSensorDescription, ...] = (
         native_unit_of_measurement=UnitOfTime.DAYS,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda d: (
-            (date.fromisoformat(d["next_booking"]["check_in"]) - date.today()).days
-            if d.get("next_booking") else None
+            (date.fromisoformat(_next(d)["check_in"]) - date.today()).days
+            if _next(d) else None
         ),
     ),
     NovaSolSensorDescription(
         key="next_guest",
         name="Next guest",
         value_fn=lambda d: (
-            d["next_booking"].get("guest_name")
-            if d.get("next_booking") else None
+            _next(d).get("guest_name") if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_guest_nationality",
+        name="Next guest nationality",
+        value_fn=lambda d: (
+            _next(d).get("guest_nationality") if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_guest_country",
+        name="Next guest country",
+        value_fn=lambda d: (
+            _NATIONALITY.get(_next(d).get("guest_nationality", ""), _next(d).get("guest_nationality"))
+            if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_booking_nights",
+        name="Next booking nights",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: (
+            _next(d).get("nights") if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_booking_adults",
+        name="Next booking adults",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: (
+            _next(d).get("adults") if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_booking_children",
+        name="Next booking children",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: (
+            _next(d).get("children") if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_booking_pets",
+        name="Next booking pets",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: (
+            _next(d).get("pets") if _next(d) else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_booking_income",
+        name="Next booking income",
+        native_unit_of_measurement="DKK",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: (
+            _next(d).get("owner_income_dkk") if _next(d) else None
         ),
     ),
     NovaSolSensorDescription(

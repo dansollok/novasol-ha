@@ -20,8 +20,13 @@ def _value(key: str, data: dict):
 NEXT_BOOKING = {
     "check_in":          (date.today() + timedelta(days=10)).isoformat(),
     "check_out":         (date.today() + timedelta(days=17)).isoformat(),
+    "nights":            7,
     "guest_name":        "Anna Schmidt",
-    "owner_income_dkk":  3600,
+    "guest_nationality": "D",
+    "adults":            2,
+    "children":          0,
+    "pets":              0,
+    "owner_income_dkk":  5000,
     "is_owner_block":    False,
 }
 
@@ -115,6 +120,74 @@ def test_ytd_income_value():
 
 def test_ytd_income_zero_when_empty():
     assert _value("ytd_income", DATA_EMPTY) == 0
+
+
+# ── next_guest_nationality ────────────────────────────────────────────────────
+
+def test_next_guest_nationality_raw_code():
+    assert _value("next_guest_nationality", DATA_WITH_BOOKING) == "D"
+
+
+def test_next_guest_nationality_none_when_no_booking():
+    assert _value("next_guest_nationality", DATA_EMPTY) is None
+
+
+# ── next_guest_country ────────────────────────────────────────────────────────
+
+def test_next_guest_country_maps_to_full_name():
+    assert _value("next_guest_country", DATA_WITH_BOOKING) == "Germany"
+
+
+def test_next_guest_country_unknown_code_falls_back_to_raw():
+    booking = {**NEXT_BOOKING, "guest_nationality": "XX"}
+    data = {**DATA_WITH_BOOKING, "next_booking": booking}
+    assert _value("next_guest_country", data) == "XX"
+
+
+def test_next_guest_country_none_when_no_booking():
+    assert _value("next_guest_country", DATA_EMPTY) is None
+
+
+# ── next_booking_nights ───────────────────────────────────────────────────────
+
+def test_next_booking_nights():
+    booking = {**NEXT_BOOKING, "nights": 7}
+    data = {**DATA_WITH_BOOKING, "next_booking": booking}
+    assert _value("next_booking_nights", data) == 7
+
+
+def test_next_booking_nights_none_when_no_booking():
+    assert _value("next_booking_nights", DATA_EMPTY) is None
+
+
+# ── next_booking_adults/children/pets ────────────────────────────────────────
+
+def test_next_booking_adults():
+    assert _value("next_booking_adults", DATA_WITH_BOOKING) == 2
+
+
+def test_next_booking_children():
+    assert _value("next_booking_children", DATA_WITH_BOOKING) == 0
+
+
+def test_next_booking_pets():
+    assert _value("next_booking_pets", DATA_WITH_BOOKING) == 0
+
+
+def test_next_booking_party_none_when_no_booking():
+    assert _value("next_booking_adults",   DATA_EMPTY) is None
+    assert _value("next_booking_children", DATA_EMPTY) is None
+    assert _value("next_booking_pets",     DATA_EMPTY) is None
+
+
+# ── next_booking_income ───────────────────────────────────────────────────────
+
+def test_next_booking_income():
+    assert _value("next_booking_income", DATA_WITH_BOOKING) == 5000
+
+
+def test_next_booking_income_none_when_no_booking():
+    assert _value("next_booking_income", DATA_EMPTY) is None
 
 
 # ── last_poll ─────────────────────────────────────────────────────────────────
