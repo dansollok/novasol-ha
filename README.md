@@ -12,13 +12,7 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 ## Features
 
 - **Calendar entity** — all bookings visible in the HA calendar card, with guest name, nationality flag, party size, and owner income in the description
-- **Sensors**
-  - Next check-in date
-  - Next check-out date
-  - Days until next check-in
-  - Next guest name
-  - Upcoming bookings count
-  - Year-to-date income (DKK)
+- **Sensors** — 15 entities covering next guest details, party composition, booking financials, occupancy, and integration health
 - **Binary sensor** — Occupancy (on when a guest is currently checked in, with guest details as attributes)
 - **Automatic token refresh** — access tokens are refreshed silently every hour; if the refresh token expires the integration re-logs in automatically using your stored credentials
 - **Multi-property support** — if your account has multiple properties, the config flow lets you pick which one to track
@@ -62,16 +56,36 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 
 ## Entities
 
-| Entity | Type | Description |
-|--------|------|-------------|
-| `calendar.novasol_XXXXX_bookings` | Calendar | All bookings (customer + owner blocks) |
-| `sensor.novasol_XXXXX_next_checkin` | Sensor | Date of next guest arrival |
-| `sensor.novasol_XXXXX_next_checkout` | Sensor | Date of next guest departure |
-| `sensor.novasol_XXXXX_days_until_checkin` | Sensor | Days until next arrival |
-| `sensor.novasol_XXXXX_next_guest` | Sensor | Name of next guest |
-| `sensor.novasol_XXXXX_upcoming_bookings` | Sensor | Number of future bookings |
-| `sensor.novasol_XXXXX_ytd_income` | Sensor | Owner income this year (DKK) |
-| `binary_sensor.novasol_XXXXX_occupied` | Binary sensor | On when a guest is checked in |
+### Calendar
+
+| Entity | Description |
+|--------|-------------|
+| `calendar.novasol_XXXXX_bookings` | All bookings — customer stays and owner blocks. Guest name, nationality flag, party size and income shown in the event description. |
+
+### Sensors
+
+| Entity | Description |
+|--------|-------------|
+| `sensor.novasol_XXXXX_next_checkin` | Date of next guest arrival |
+| `sensor.novasol_XXXXX_next_checkout` | Date of next guest departure |
+| `sensor.novasol_XXXXX_days_until_checkin` | Days until next arrival |
+| `sensor.novasol_XXXXX_next_guest` | Full name of next guest |
+| `sensor.novasol_XXXXX_next_guest_nationality` | Raw nationality code (e.g. `D`) |
+| `sensor.novasol_XXXXX_next_guest_country` | Full country name (e.g. `Germany`) |
+| `sensor.novasol_XXXXX_next_booking_nights` | Length of next stay in nights |
+| `sensor.novasol_XXXXX_next_booking_adults` | Number of adults in next booking |
+| `sensor.novasol_XXXXX_next_booking_children` | Number of children in next booking |
+| `sensor.novasol_XXXXX_next_booking_pets` | Number of pets in next booking |
+| `sensor.novasol_XXXXX_next_booking_income` | Owner income for the next booking (DKK) |
+| `sensor.novasol_XXXXX_upcoming_bookings` | Total number of future customer bookings |
+| `sensor.novasol_XXXXX_ytd_income` | Owner income booked so far this year (DKK) |
+| `sensor.novasol_XXXXX_last_successful_poll` | Timestamp of last successful data fetch — stops updating if the integration breaks |
+
+### Binary sensor
+
+| Entity | Description |
+|--------|-------------|
+| `binary_sensor.novasol_XXXXX_occupied` | On when a guest is currently checked in. Attributes include guest name, check-in/out dates, and party size. |
 
 ---
 
@@ -81,10 +95,19 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 Check that your Novasol credentials are correct. Try logging in at [login.novasol.dk](https://login.novasol.dk) to verify.
 
 **Bookings not updating**  
-The integration polls every 6 hours. To force a refresh, go to Settings → Devices & Services → Novasol → three-dot menu → **Reload**.
+The integration polls every 6 hours. To force a refresh go to Settings → Devices & Services → Novasol → three-dot menu → **Reload**.
 
 **Income shows 0**  
-Year-to-date income counts bookings made (booked-on date) in the current calendar year. Bookings made last year but staying this year are not included.
+Year-to-date income counts bookings made (booked-on date) in the current calendar year. Bookings placed last year for stays this year are not included.
+
+**How do I verify the integration is running?**  
+Check `sensor.novasol_XXXXX_last_successful_poll` — it updates every time data is fetched successfully. If it stops advancing, something is wrong. For detailed logs add this to `configuration.yaml` and restart:
+```yaml
+logger:
+  default: warning
+  logs:
+    custom_components.novasol: debug
+```
 
 ---
 
@@ -107,13 +130,7 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 ## Funktioner
 
 - **Kalender-enhed** — alle bookinger synlige i HA kalender-kortet, med gæstenavn, nationalitetsflag, antal personer og ejerindtægt i beskrivelsen
-- **Sensorer**
-  - Næste check-in dato
-  - Næste check-out dato
-  - Dage til næste check-in
-  - Næste gæsts navn
-  - Antal kommende bookinger
-  - Årets indtægt til dato (DKK)
+- **Sensorer** — 15 entiteter med næste gæsts detaljer, selskabsstørrelse, økonomi, belægning og integrationsstatus
 - **Binær sensor** — Belægning (tændt når en gæst er tjekket ind, med gæstedetaljer som attributter)
 - **Automatisk token-fornyelse** — adgangstokens fornyes lydløst hver time; udløber refresh-token, logger integrationen automatisk ind igen med de gemte credentials
 - **Understøttelse af flere ejendomme** — har din konto flere ejendomme, kan du vælge hvilken der skal synkroniseres under opsætningen
@@ -155,6 +172,41 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 
 ---
 
+## Entiteter
+
+### Kalender
+
+| Entitet | Beskrivelse |
+|---------|-------------|
+| `calendar.novasol_XXXXX_bookings` | Alle bookinger — gæsteophold og ejerblokke. Gæstenavn, nationalitetsflag, antal personer og indtægt vises i begivenhedsbeskrivelsen. |
+
+### Sensorer
+
+| Entitet | Beskrivelse |
+|---------|-------------|
+| `sensor.novasol_XXXXX_next_checkin` | Næste gæsts ankomstdato |
+| `sensor.novasol_XXXXX_next_checkout` | Næste gæsts afrejsedato |
+| `sensor.novasol_XXXXX_days_until_checkin` | Dage til næste ankomst |
+| `sensor.novasol_XXXXX_next_guest` | Næste gæsts fulde navn |
+| `sensor.novasol_XXXXX_next_guest_nationality` | Nationalitetskode (fx `D`) |
+| `sensor.novasol_XXXXX_next_guest_country` | Fuldt landsnavn (fx `Germany`) |
+| `sensor.novasol_XXXXX_next_booking_nights` | Antal nætter i næste booking |
+| `sensor.novasol_XXXXX_next_booking_adults` | Antal voksne i næste booking |
+| `sensor.novasol_XXXXX_next_booking_children` | Antal børn i næste booking |
+| `sensor.novasol_XXXXX_next_booking_pets` | Antal kæledyr i næste booking |
+| `sensor.novasol_XXXXX_next_booking_income` | Ejerindtægt for næste booking (DKK) |
+| `sensor.novasol_XXXXX_upcoming_bookings` | Antal kommende gæstebookinger |
+| `sensor.novasol_XXXXX_ytd_income` | Årets ejerindtægt til dato (DKK) |
+| `sensor.novasol_XXXXX_last_successful_poll` | Tidspunkt for seneste vellykkede datahentning |
+
+### Binær sensor
+
+| Entitet | Beskrivelse |
+|---------|-------------|
+| `binary_sensor.novasol_XXXXX_occupied` | Tændt når en gæst er tjekket ind. Attributter inkluderer gæstenavn, check-in/ud datoer og selskabsstørrelse. |
+
+---
+
 ## Fejlfinding
 
 **Integrationen vises som utilgængelig efter opsætning**  
@@ -165,6 +217,15 @@ Integrationen henter data hvert 6. time. For at tvinge en opdatering: Indstillin
 
 **Indtægt viser 0**  
 Årets indtægt til dato tæller bookinger der er foretaget (bestillingsdato) i det aktuelle kalenderår. Bookinger foretaget sidste år med ophold i år tælles ikke med.
+
+**Hvordan ved jeg om integrationen kører?**  
+Tjek `sensor.novasol_XXXXX_last_successful_poll` — den opdateres hver gang data hentes. Hvis den holder op med at skifte, er der et problem. For detaljerede logs tilføj dette til `configuration.yaml` og genstart:
+```yaml
+logger:
+  default: warning
+  logs:
+    custom_components.novasol: debug
+```
 
 ---
 
