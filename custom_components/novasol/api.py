@@ -190,45 +190,33 @@ class NovaSolApiClient:
     async def _ensure_drupal_session(self) -> None:
         """Call the Awaze SSO bridge to establish a Drupal session.
 
-        The endpoint is a JSON API that expects a POST body with at least
-        `accessToken` and `username`; a GET or query-param approach returns
-        422 "User parameters missing".  allow_redirects is disabled so a
-        redirect-to-login surfaces as a warning rather than a silent HTTP 200.
+        Requires a POST with JSON body {accessToken, username} — GET and
+        query-param approaches all return 422 "User parameters missing".
+        On success the server sets a Drupal SSESS cookie that authorises
+        subsequent /novasol/api/ requests.
         """
         async with self._session.post(
             f"{BASE_URL}/awaze-owner-login",
-            json={
-                "accessToken": self._access_token,
-                "username":    self._username,
-            },
-            headers=self._auth_headers(),
+            json={"accessToken": self._access_token, "username": self._username},
             allow_redirects=False,
         ) as resp:
-            ct  = resp.headers.get("content-type", "")
-            loc = resp.headers.get("location", "")
             try:
                 body = await resp.text()
             except Exception:
                 body = ""
+            loc = resp.headers.get("location", "")
             _LOGGER.debug(
-                "Drupal SSO bridge: HTTP %s, content-type: %s%s — %s",
+                "Drupal SSO bridge: HTTP %s%s — %s",
                 resp.status,
-                ct,
                 f", redirect→ {loc}" if loc else "",
                 body[:200],
             )
-            if resp.status in (301, 302, 303, 307, 308):
+            if "User login success" not in body:
                 _LOGGER.warning(
-                    "Drupal SSO bridge redirected to %s — "
-                    "Drupal session not established; /novasol/api/ sensors unavailable",
-                    loc,
+                    "Drupal SSO bridge did not confirm login: %s — "
+                    "/novasol/api/ sensors may be unavailable",
+                    body[:200],
                 )
-                return
-            try:
-                cookie_names = [c.key for c in self._session.cookie_jar]  # type: ignore[attr-defined]
-                _LOGGER.debug("Session cookies after SSO bridge: %s", cookie_names or "none")
-            except Exception:
-                pass
 
     async def get_key_figures(self, property_id: str) -> dict:
         """Fetch annual key figures from the Drupal API namespace."""
