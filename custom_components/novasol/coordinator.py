@@ -6,7 +6,10 @@ from datetime import date, datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import (
+    DataUpdateCoordinator,
+    UpdateFailed,
+)
 
 from .api import AuthError, NovaSolApiClient
 from .const import (
@@ -15,6 +18,7 @@ from .const import (
     CONF_TOKEN_EXPIRY,
     DOMAIN,
     SCAN_INTERVAL_HOURS,
+    SCAN_INTERVAL_STATS_HOURS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -128,4 +132,62 @@ class NovaSolCoordinator(DataUpdateCoordinator):
             "ytd_income_dkk":   ytd_income,
             "upcoming_count":   len(future_customer),
             "last_poll":        datetime.now(timezone.utc),
+        }
+
+
+class NovaSolStatsCoordinator(DataUpdateCoordinator):
+    """Fetches slowly-changing data: annual key figures and review scores (every 24 h)."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        client: NovaSolApiClient,
+        property_id: str,
+    ) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN}_stats",
+            update_interval=timedelta(hours=SCAN_INTERVAL_STATS_HOURS),
+        )
+        self._client = client
+        self.property_id = property_id
+
+    async def _async_update_data(self) -> dict:
+        year = str(date.today().year)
+
+        key_figures: dict = {}
+        try:
+            key_figures = await self._client.get_key_figures(self.property_id)
+        except Exception as exc:
+            _LOGGER.warning("Failed to fetch key figures: %s", exc)
+
+        reviews: dict = {}
+        try:
+            reviews = await self._client.get_reviews(self.property_id)
+        except Exception as exc:
+            _LOGGER.warning("Failed to fetch reviews: %s", exc)
+
+        figures = key_figures.get("figures", {})
+        events  = key_figures.get("events", {})
+
+        hire   = figures.get("hire", {})
+        days   = figures.get("days", {})
+        elec   = figures.get("electricity", {})
+        booked = events.get("booked", {})
+        owner  = events.get("owner", {})
+        total  = events.get("total", {})
+
+        available   = (total.get(year) or 0) - (owner.get(year) or 0)
+        booked_days = booked.get(year) or 0
+        occupancy   = round(booked_days / available * 100, 1) if available > 0 else None
+
+        return {
+            "annual_income":      hire.get(year),
+            "annual_guest_days":  days.get(year),
+            "annual_electricity": elec.get(year),
+            "annual_occupancy":   occupancy,
+            "review_score":       reviews.get("averageScore"),
+            "review_count":       reviews.get("numberOfReviews"),
         }

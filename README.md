@@ -3,7 +3,7 @@
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
 Integrates the [Novasol](https://www.novasol.dk) owner portal into Home Assistant.  
-Syncs your rental bookings as a calendar and exposes sensors for upcoming guests, occupancy, and income — with no cloud dependency beyond the Novasol API itself.
+Syncs your rental bookings as a calendar and exposes sensors for upcoming guests, occupancy, income, annual performance, and guest reviews — with no cloud dependency beyond the Novasol API itself.
 
 > **No browser or Playwright required.** Authentication uses plain HTTP calls to the Novasol API, so the integration runs on every device including Raspberry Pi Zero.
 
@@ -12,7 +12,9 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 ## Features
 
 - **Calendar entity** — all bookings visible in the HA calendar card, with guest name, nationality flag, party size, and owner income in the description
-- **Sensors** — 15 entities covering next guest details, party composition, booking financials, occupancy, and integration health
+- **Sensors** — 24 entities across two update cycles:
+  - *Every 6 hours:* next guest details, current stay, party composition, booking financials, occupancy, and integration health
+  - *Every 24 hours:* annual income, guest days, electricity cost, occupancy rate, and Feefo review score
 - **Binary sensor** — Occupancy (on when a guest is currently checked in, with guest details as attributes)
 - **Automatic token refresh** — access tokens are refreshed silently every hour; if the refresh token expires the integration re-logs in automatically using your stored credentials
 - **Multi-property support** — if your account has multiple properties, the config flow lets you pick which one to track
@@ -64,6 +66,8 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 
 ### Sensors
 
+#### Updated every 6 hours
+
 | Entity | Description |
 |--------|-------------|
 | `sensor.novasol_XXXXX_next_checkin` | Date of next guest arrival |
@@ -77,9 +81,24 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 | `sensor.novasol_XXXXX_next_booking_children` | Number of children in next booking |
 | `sensor.novasol_XXXXX_next_booking_pets` | Number of pets in next booking |
 | `sensor.novasol_XXXXX_next_booking_income` | Owner income for the next booking (DKK) |
+| `sensor.novasol_XXXXX_next_booking_booked_on` | Date the next booking was made |
+| `sensor.novasol_XXXXX_current_guest` | Full name of the guest currently staying (None when vacant) |
+| `sensor.novasol_XXXXX_current_checkout` | Checkout date of the current stay |
+| `sensor.novasol_XXXXX_current_booking_nights` | Length of the current stay in nights |
 | `sensor.novasol_XXXXX_upcoming_bookings` | Total number of future customer bookings |
 | `sensor.novasol_XXXXX_ytd_income` | Owner income booked so far this year (DKK) |
 | `sensor.novasol_XXXXX_last_successful_poll` | Timestamp of last successful data fetch — stops updating if the integration breaks |
+
+#### Updated every 24 hours
+
+| Entity | Description |
+|--------|-------------|
+| `sensor.novasol_XXXXX_annual_income` | Total owner hire income for the current calendar year (DKK) |
+| `sensor.novasol_XXXXX_annual_guest_days` | Total guest nights for the current calendar year |
+| `sensor.novasol_XXXXX_annual_electricity` | Electricity cost charged to owner for the current year (DKK) |
+| `sensor.novasol_XXXXX_annual_occupancy` | Occupancy rate for the current year — guest days as a percentage of available days (%) |
+| `sensor.novasol_XXXXX_review_score` | Overall Feefo guest review score (0–5) |
+| `sensor.novasol_XXXXX_review_count` | Total number of guest reviews |
 
 ### Binary sensor
 
@@ -99,6 +118,9 @@ The integration polls every 6 hours. To force a refresh go to Settings → Devic
 
 **Income shows 0**  
 Year-to-date income counts bookings made (booked-on date) in the current calendar year. Bookings placed last year for stays this year are not included.
+
+**Annual / review sensors show as unavailable**  
+These sensors update every 24 hours from a separate API namespace (`/novasol/api/`). If they stay unavailable after 24 hours, the portal's cookie-based authentication for that namespace may not be working yet. The booking sensors and calendar are not affected — they use the standard bearer-token API. Check the HA logs for `Failed to fetch key figures` or `Failed to fetch reviews` warnings.
 
 **How do I verify the integration is running?**  
 Check `sensor.novasol_XXXXX_last_successful_poll` — it updates every time data is fetched successfully. If it stops advancing, something is wrong. For detailed logs add this to `configuration.yaml` and restart:
@@ -121,7 +143,7 @@ MIT
 # Novasol Home Assistant Integration *(Dansk)*
 
 Integrerer [Novasol](https://www.novasol.dk) ejerportalen i Home Assistant.  
-Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kommende gæster, belægning og indtægt — uden ekstra cloudafhængigheder ud over Novasol API'et selv.
+Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kommende gæster, belægning, indtægt, årsstatistik og gæsteanmeldelser — uden ekstra cloudafhængigheder ud over Novasol API'et selv.
 
 > **Ingen browser eller Playwright kræves.** Godkendelse sker via almindelige HTTP-kald til Novasol API'et, så integrationen kører på alle enheder inkl. Raspberry Pi Zero.
 
@@ -130,7 +152,9 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 ## Funktioner
 
 - **Kalender-enhed** — alle bookinger synlige i HA kalender-kortet, med gæstenavn, nationalitetsflag, antal personer og ejerindtægt i beskrivelsen
-- **Sensorer** — 15 entiteter med næste gæsts detaljer, selskabsstørrelse, økonomi, belægning og integrationsstatus
+- **Sensorer** — 24 entiteter fordelt på to opdateringscyklusser:
+  - *Hvert 6. time:* næste gæsts detaljer, igangværende ophold, selskabsstørrelse, økonomi, belægning og integrationsstatus
+  - *Hvert 24. time:* årsindtægt, gæstedage, elforbrug, belægningsprocent og Feefo-anmeldelsesscore
 - **Binær sensor** — Belægning (tændt når en gæst er tjekket ind, med gæstedetaljer som attributter)
 - **Automatisk token-fornyelse** — adgangstokens fornyes lydløst hver time; udløber refresh-token, logger integrationen automatisk ind igen med de gemte credentials
 - **Understøttelse af flere ejendomme** — har din konto flere ejendomme, kan du vælge hvilken der skal synkroniseres under opsætningen
@@ -182,6 +206,8 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 
 ### Sensorer
 
+#### Opdateres hvert 6. time
+
 | Entitet | Beskrivelse |
 |---------|-------------|
 | `sensor.novasol_XXXXX_next_checkin` | Næste gæsts ankomstdato |
@@ -195,9 +221,24 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 | `sensor.novasol_XXXXX_next_booking_children` | Antal børn i næste booking |
 | `sensor.novasol_XXXXX_next_booking_pets` | Antal kæledyr i næste booking |
 | `sensor.novasol_XXXXX_next_booking_income` | Ejerindtægt for næste booking (DKK) |
+| `sensor.novasol_XXXXX_next_booking_booked_on` | Dato for da næste booking blev foretaget |
+| `sensor.novasol_XXXXX_current_guest` | Fuldt navn på gæst der opholder sig nu (None ved ledigt) |
+| `sensor.novasol_XXXXX_current_checkout` | Afrejsedato for igangværende ophold |
+| `sensor.novasol_XXXXX_current_booking_nights` | Antal nætter i igangværende ophold |
 | `sensor.novasol_XXXXX_upcoming_bookings` | Antal kommende gæstebookinger |
 | `sensor.novasol_XXXXX_ytd_income` | Årets ejerindtægt til dato (DKK) |
 | `sensor.novasol_XXXXX_last_successful_poll` | Tidspunkt for seneste vellykkede datahentning |
+
+#### Opdateres hvert 24. time
+
+| Entitet | Beskrivelse |
+|---------|-------------|
+| `sensor.novasol_XXXXX_annual_income` | Samlet ejerindtægt for indeværende kalenderår (DKK) |
+| `sensor.novasol_XXXXX_annual_guest_days` | Samlet antal gæstenætter for indeværende kalenderår |
+| `sensor.novasol_XXXXX_annual_electricity` | Elforbrug debiteret ejer for indeværende år (DKK) |
+| `sensor.novasol_XXXXX_annual_occupancy` | Belægningsprocent for indeværende år — gæstedage som andel af disponible dage (%) |
+| `sensor.novasol_XXXXX_review_score` | Samlet Feefo-gæsteanmeldelsesscore (0–5) |
+| `sensor.novasol_XXXXX_review_count` | Samlet antal gæsteanmeldelser |
 
 ### Binær sensor
 
@@ -217,6 +258,9 @@ Integrationen henter data hvert 6. time. For at tvinge en opdatering: Indstillin
 
 **Indtægt viser 0**  
 Årets indtægt til dato tæller bookinger der er foretaget (bestillingsdato) i det aktuelle kalenderår. Bookinger foretaget sidste år med ophold i år tælles ikke med.
+
+**Årsstatistik- og anmeldelsessensorer vises som utilgængelige**  
+Disse sensorer opdateres hvert 24. time fra et separat API-navnerum (`/novasol/api/`). Forbliver de utilgængelige efter 24 timer, fungerer portalens cookie-baserede autentificering for dette navnerum muligvis ikke endnu. Booking-sensorerne og kalenderen er ikke berørt — de bruger det normale bearer-token API. Tjek HA-logs for advarslerne `Failed to fetch key figures` eller `Failed to fetch reviews`.
 
 **Hvordan ved jeg om integrationen kører?**  
 Tjek `sensor.novasol_XXXXX_last_successful_poll` — den opdateres hver gang data hentes. Hvis den holder op med at skifte, er der et problem. For detaljerede logs tilføj dette til `configuration.yaml` og genstart:

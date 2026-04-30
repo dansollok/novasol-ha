@@ -187,6 +187,28 @@ class NovaSolApiClient:
 
         return [_parse_booking(b) for b in data.get("bookings", [])]
 
+    async def get_key_figures(self, property_id: str) -> dict:
+        """Fetch annual key figures from the Drupal API namespace (cookie auth)."""
+        await self.ensure_valid_token()
+        async with self._session.get(
+            f"{BASE_URL}/novasol/api/key_figures",
+            params={"rentalId": property_id},
+            headers={"Cookie": f"accessToken={self._access_token}"},
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
+    async def get_reviews(self, property_id: str) -> dict:
+        """Fetch guest review summary from Feefo via the v1 API."""
+        await self.ensure_valid_token()
+        async with self._session.get(
+            f"{BASE_URL}/v1/properties/{property_id}/customerReviews",
+            params={"language": "da"},
+            headers=self._auth_headers(),
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
     async def get_booking_detail(self, booking_id: str) -> dict | None:
         """Fetch rich detail for a single customer booking."""
         await self.ensure_valid_token()

@@ -350,6 +350,32 @@ CUSTOMER_BOOKING = {
     "extrasOrdered": False,
 }
 
+KEY_FIGURES_RESPONSE = {
+    "figures": {
+        "hire":        {"2025": 52745, "2026": 34989},
+        "days":        {"2025": 68,    "2026": 55   },
+        "electricity": {"2025": 4428,  "2026": 237  },
+    },
+    "events": {
+        "booked":   {"2025": 68,  "2026": 55,  "2027": 0  },
+        "optioned": {"2025": 0,   "2026": 0,   "2027": 0  },
+        "owner":    {"2025": 211, "2026": 223, "2027": 89 },
+        "total":    {"2025": 365, "2026": 365, "2027": 365},
+    },
+    "currency": "DKK",
+}
+
+REVIEWS_RESPONSE = {
+    "provider":        "Feefo",
+    "averageScore":    5,
+    "maxReviewScore":  5,
+    "numberOfReviews": 2,
+    "overallCategories": [
+        {"id": "overall-rating", "displayText": "Samlet bedømmelse", "score": 5},
+    ],
+    "reviews": [],
+}
+
 BOOKINGLIST_RESPONSE = {
     "fromDate":   "2026-01-01",
     "toDate":     "2027-12-31",

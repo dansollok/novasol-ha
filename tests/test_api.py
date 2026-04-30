@@ -10,10 +10,12 @@ from custom_components.novasol.api import AuthError, NovaSolApiClient
 from .conftest import (
     BOOKINGLIST_RESPONSE,
     CUSTOMER_BOOKING,
+    KEY_FIGURES_RESPONSE,
     LOGIN_RESPONSE,
     OWNER_BLOCK,
     PROPERTIES_RESPONSE,
     REFRESH_RESPONSE,
+    REVIEWS_RESPONSE,
     make_jwt,
     mock_response,
     mock_session,
@@ -284,3 +286,32 @@ def test_parse_expiry_falls_back_on_garbage():
     expiry = NovaSolApiClient._parse_expiry("not.a.jwt")
     # Should return ~55 minutes from now (fallback)
     assert abs(expiry - (time.time() + 3300)) < 10
+
+
+# ── get_key_figures() ─────────────────────────────────────────────────────────
+
+async def test_get_key_figures_returns_figures():
+    session = mock_session(mock_response(200, KEY_FIGURES_RESPONSE))
+    client  = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        result = await client.get_key_figures("D13051")
+
+    assert result["currency"] == "DKK"
+    assert "hire" in result["figures"]
+
+
+# ── get_reviews() ─────────────────────────────────────────────────────────────
+
+async def test_get_reviews_returns_summary():
+    session = mock_session(mock_response(200, REVIEWS_RESPONSE))
+    client  = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        result = await client.get_reviews("D13051")
+
+    assert result["averageScore"]    == 5
+    assert result["numberOfReviews"] == 2
+    assert result["provider"]        == "Feefo"
+
+

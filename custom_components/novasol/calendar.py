@@ -24,7 +24,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: NovaSolCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: NovaSolCoordinator = hass.data[DOMAIN][entry.entry_id]["bookings"]
     async_add_entities([NovaSolCalendar(coordinator, entry)])
 
 

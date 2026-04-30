@@ -15,10 +15,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity, DataUpdateCoordinator
 
 from .const import DOMAIN
-from .coordinator import NovaSolCoordinator
+from .coordinator import NovaSolCoordinator, NovaSolStatsCoordinator
 
 # Vehicle-registration nationality codes used by the Novasol API → full country name
 _NATIONALITY: dict[str, str] = {
@@ -145,6 +145,40 @@ SENSORS: tuple[NovaSolSensorDescription, ...] = (
         ),
     ),
     NovaSolSensorDescription(
+        key="current_guest",
+        name="Current guest",
+        value_fn=lambda d: (
+            d["occupied_booking"].get("guest_name") if d.get("occupied_booking") else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="current_checkout",
+        name="Current check-out",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=lambda d: (
+            date.fromisoformat(d["occupied_booking"]["check_out"])
+            if d.get("occupied_booking") else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="current_booking_nights",
+        name="Current booking nights",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: (
+            d["occupied_booking"].get("nights") if d.get("occupied_booking") else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="next_booking_booked_on",
+        name="Next booking booked on",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=lambda d: (
+            date.fromisoformat(_next(d)["booked_on"])
+            if _next(d) and _next(d).get("booked_on") else None
+        ),
+    ),
+    NovaSolSensorDescription(
         key="upcoming_bookings",
         name="Upcoming bookings",
         state_class=SensorStateClass.MEASUREMENT,
@@ -166,23 +200,72 @@ SENSORS: tuple[NovaSolSensorDescription, ...] = (
 )
 
 
+STATS_SENSORS: tuple[NovaSolSensorDescription, ...] = (
+    NovaSolSensorDescription(
+        key="annual_income",
+        name="Annual income",
+        native_unit_of_measurement="DKK",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("annual_income"),
+    ),
+    NovaSolSensorDescription(
+        key="annual_guest_days",
+        name="Annual guest days",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("annual_guest_days"),
+    ),
+    NovaSolSensorDescription(
+        key="annual_electricity",
+        name="Annual electricity cost",
+        native_unit_of_measurement="DKK",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("annual_electricity"),
+    ),
+    NovaSolSensorDescription(
+        key="annual_occupancy",
+        name="Annual occupancy",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("annual_occupancy"),
+    ),
+    NovaSolSensorDescription(
+        key="review_score",
+        name="Review score",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_score"),
+    ),
+    NovaSolSensorDescription(
+        key="review_count",
+        name="Review count",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_count"),
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator: NovaSolCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities(
-        NovaSolSensor(coordinator, entry, description) for description in SENSORS
-    )
+    data = hass.data[DOMAIN][entry.entry_id]
+    booking_coordinator: NovaSolCoordinator      = data["bookings"]
+    stats_coordinator:   NovaSolStatsCoordinator = data["stats"]
+    entities = [
+        NovaSolSensor(booking_coordinator, entry, desc) for desc in SENSORS
+    ] + [
+        NovaSolSensor(stats_coordinator, entry, desc) for desc in STATS_SENSORS
+    ]
+    async_add_entities(entities)
 
 
-class NovaSolSensor(CoordinatorEntity[NovaSolCoordinator], SensorEntity):
+class NovaSolSensor(CoordinatorEntity[DataUpdateCoordinator], SensorEntity):
     _attr_has_entity_name = True
 
     def __init__(
         self,
-        coordinator: NovaSolCoordinator,
+        coordinator: DataUpdateCoordinator,
         entry: ConfigEntry,
         description: NovaSolSensorDescription,
     ) -> None:

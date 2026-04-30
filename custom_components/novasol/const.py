@@ -1,6 +1,7 @@
 DOMAIN = "novasol"
 BASE_URL = "https://login.novasol.dk"
 SCAN_INTERVAL_HOURS = 6
+SCAN_INTERVAL_STATS_HOURS = 24
 
 CONF_PROPERTY_ID = "property_id"
 CONF_UNIT_ID = "unit_id"

@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from custom_components.novasol.sensor import SENSORS
+from custom_components.novasol.sensor import SENSORS, STATS_SENSORS
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -13,8 +13,16 @@ def _sensor(key: str):
     return next(s for s in SENSORS if s.key == key)
 
 
+def _stats_sensor(key: str):
+    return next(s for s in STATS_SENSORS if s.key == key)
+
+
 def _value(key: str, data: dict):
     return _sensor(key).value_fn(data)
+
+
+def _stats_value(key: str, data: dict):
+    return _stats_sensor(key).value_fn(data)
 
 
 NEXT_BOOKING = {
@@ -26,26 +34,67 @@ NEXT_BOOKING = {
     "adults":            2,
     "children":          0,
     "pets":              0,
+    "booked_on":         "2025-12-15",
     "owner_income_dkk":  5000,
     "is_owner_block":    False,
+}
+
+OCCUPIED_BOOKING = {
+    "check_in":          (date.today() - timedelta(days=2)).isoformat(),
+    "check_out":         (date.today() + timedelta(days=5)).isoformat(),
+    "nights":            7,
+    "guest_name":        "Hans Mueller",
+    "guest_nationality": "D",
+    "adults":            2,
+    "children":          1,
+    "pets":              0,
 }
 
 _NOW = datetime.now(timezone.utc)
 
 DATA_WITH_BOOKING = {
-    "next_booking":   NEXT_BOOKING,
-    "upcoming_count": 3,
-    "ytd_income_dkk": 15000,
-    "is_occupied":    False,
-    "last_poll":      _NOW,
+    "next_booking":    NEXT_BOOKING,
+    "occupied_booking": None,
+    "upcoming_count":  3,
+    "ytd_income_dkk":  15000,
+    "is_occupied":     False,
+    "last_poll":       _NOW,
+}
+
+DATA_OCCUPIED = {
+    "next_booking":    None,
+    "occupied_booking": OCCUPIED_BOOKING,
+    "upcoming_count":  0,
+    "ytd_income_dkk":  0,
+    "is_occupied":     True,
+    "last_poll":       _NOW,
 }
 
 DATA_EMPTY = {
-    "next_booking":   None,
-    "upcoming_count": 0,
-    "ytd_income_dkk": 0,
-    "is_occupied":    False,
-    "last_poll":      None,
+    "next_booking":    None,
+    "occupied_booking": None,
+    "upcoming_count":  0,
+    "ytd_income_dkk":  0,
+    "is_occupied":     False,
+    "last_poll":       None,
+}
+
+STATS_DATA = {
+    "annual_income":      52745,
+    "annual_guest_days":  68,
+    "annual_electricity": 4428,
+    "annual_occupancy":   44.2,
+    "review_score":       5,
+    "review_count":       2,
+}
+
+STATS_DATA_EMPTY = {
+    "annual_income":      None,
+    "annual_guest_days":  None,
+    "annual_electricity": None,
+    "annual_occupancy":   None,
+    "review_score":       None,
+    "review_count":       None,
 }
 
 # ── next_checkin ──────────────────────────────────────────────────────────────
@@ -199,3 +248,88 @@ def test_last_poll_returns_datetime():
 
 def test_last_poll_none_before_first_successful_fetch():
     assert _value("last_poll", DATA_EMPTY) is None
+
+
+# ── current_guest ─────────────────────────────────────────────────────────────
+
+def test_current_guest_returns_name_when_occupied():
+    assert _value("current_guest", DATA_OCCUPIED) == "Hans Mueller"
+
+
+def test_current_guest_none_when_not_occupied():
+    assert _value("current_guest", DATA_WITH_BOOKING) is None
+    assert _value("current_guest", DATA_EMPTY) is None
+
+
+# ── current_checkout ──────────────────────────────────────────────────────────
+
+def test_current_checkout_returns_date_when_occupied():
+    val = _value("current_checkout", DATA_OCCUPIED)
+    assert val == date.today() + timedelta(days=5)
+
+
+def test_current_checkout_none_when_not_occupied():
+    assert _value("current_checkout", DATA_EMPTY) is None
+
+
+# ── current_booking_nights ────────────────────────────────────────────────────
+
+def test_current_booking_nights_when_occupied():
+    assert _value("current_booking_nights", DATA_OCCUPIED) == 7
+
+
+def test_current_booking_nights_none_when_not_occupied():
+    assert _value("current_booking_nights", DATA_EMPTY) is None
+
+
+# ── next_booking_booked_on ────────────────────────────────────────────────────
+
+def test_next_booking_booked_on_returns_date():
+    val = _value("next_booking_booked_on", DATA_WITH_BOOKING)
+    assert val == date(2025, 12, 15)
+
+
+def test_next_booking_booked_on_none_when_no_booking():
+    assert _value("next_booking_booked_on", DATA_EMPTY) is None
+
+
+def test_next_booking_booked_on_none_when_field_missing():
+    booking_without_date = {**NEXT_BOOKING, "booked_on": None}
+    data = {**DATA_WITH_BOOKING, "next_booking": booking_without_date}
+    assert _value("next_booking_booked_on", data) is None
+
+
+# ── STATS_SENSORS ─────────────────────────────────────────────────────────────
+
+def test_annual_income():
+    assert _stats_value("annual_income", STATS_DATA) == 52745
+
+
+def test_annual_income_none_when_empty():
+    assert _stats_value("annual_income", STATS_DATA_EMPTY) is None
+
+
+def test_annual_guest_days():
+    assert _stats_value("annual_guest_days", STATS_DATA) == 68
+
+
+def test_annual_electricity():
+    assert _stats_value("annual_electricity", STATS_DATA) == 4428
+
+
+def test_annual_occupancy():
+    assert _stats_value("annual_occupancy", STATS_DATA) == 44.2
+
+
+def test_review_score():
+    assert _stats_value("review_score", STATS_DATA) == 5
+
+
+def test_review_count():
+    assert _stats_value("review_count", STATS_DATA) == 2
+
+
+def test_stats_all_none_when_empty():
+    for key in ("annual_income", "annual_guest_days", "annual_electricity",
+                "annual_occupancy", "review_score", "review_count"):
+        assert _stats_value(key, STATS_DATA_EMPTY) is None
