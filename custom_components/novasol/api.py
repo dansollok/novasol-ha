@@ -42,6 +42,8 @@ class NovaSolApiClient:
         self._access_token = access_token
         self._refresh_token = refresh_token
         self._token_expiry = expiry
+        if access_token:
+            self._sync_access_token_cookie()
 
     def dump_tokens(self) -> dict:
         """Return tokens for persistence in the config entry."""
@@ -104,6 +106,7 @@ class NovaSolApiClient:
             if "refreshToken" in data:
                 self._refresh_token = data["refreshToken"]
             self._token_expiry = self._parse_expiry(self._access_token)
+            self._sync_access_token_cookie()
             _LOGGER.debug("Token refreshed, expires at %s", self._token_expiry)
             return True
         except Exception as exc:
@@ -118,6 +121,20 @@ class NovaSolApiClient:
             return
         _LOGGER.info("Refresh token expired or missing — performing full re-login")
         await self.authenticate()
+
+    def _sync_access_token_cookie(self) -> None:
+        """Keep the accessToken cookie in sync with the in-memory JWT.
+
+        The /awaze-owner-login SSO bridge validates the POST body token against
+        the accessToken cookie. A full login sets the cookie automatically via
+        Set-Cookie, but a token refresh or a load_tokens restore does not — so
+        we force-update the jar here after every token change.
+        """
+        from yarl import URL
+        self._session.cookie_jar.update_cookies(
+            {"accessToken": self._access_token},
+            URL(BASE_URL),
+        )
 
     # ── API calls ─────────────────────────────────────────────────────────────
 
