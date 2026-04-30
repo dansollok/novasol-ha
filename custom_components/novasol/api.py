@@ -188,18 +188,35 @@ class NovaSolApiClient:
         return [_parse_booking(b) for b in data.get("bookings", [])]
 
     async def _ensure_drupal_session(self) -> None:
-        """Call the SSO bridge so the Drupal side recognises our session.
+        """Call the Awaze SSO bridge to establish a Drupal session.
 
-        /novasol/api/ endpoints redirect to /login when there is no active
-        Drupal session.  Calling /awaze-owner-login with the Bearer token
-        establishes that session and the resulting Set-Cookie is stored
-        automatically in the aiohttp session's cookie jar.
+        The bridge is called with both Bearer header and Cookie so either
+        mechanism the Drupal module checks will be satisfied.  allow_redirects
+        is disabled so a redirect-to-login is visible in the logs rather than
+        silently following it and logging a misleading HTTP 200.
         """
         async with self._session.get(
             f"{BASE_URL}/awaze-owner-login",
-            headers=self._auth_headers(),
+            headers={
+                **self._auth_headers(),
+                "Cookie": f"accessToken={self._access_token}",
+            },
+            allow_redirects=False,
         ) as resp:
-            _LOGGER.debug("Drupal SSO bridge: HTTP %s", resp.status)
+            ct  = resp.headers.get("content-type", "")
+            loc = resp.headers.get("location", "")
+            _LOGGER.debug(
+                "Drupal SSO bridge: HTTP %s, content-type: %s%s",
+                resp.status,
+                ct,
+                f", redirect→ {loc}" if loc else "",
+            )
+            if resp.status in (301, 302, 303, 307, 308):
+                _LOGGER.warning(
+                    "Drupal SSO bridge redirected to %s — "
+                    "Drupal session not established; /novasol/api/ sensors unavailable",
+                    loc,
+                )
 
     async def get_key_figures(self, property_id: str) -> dict:
         """Fetch annual key figures from the Drupal API namespace."""
@@ -209,7 +226,13 @@ class NovaSolApiClient:
             f"{BASE_URL}/novasol/api/key_figures",
             params={"rentalId": property_id},
             headers=self._auth_headers(),
+            allow_redirects=False,
         ) as resp:
+            if resp.status in (301, 302, 303, 307, 308):
+                raise RuntimeError(
+                    f"key_figures redirected to {resp.headers.get('location', '?')}"
+                    " — Drupal session not established"
+                )
             resp.raise_for_status()
             return await resp.json()
 

@@ -318,6 +318,19 @@ async def test_get_key_figures_calls_sso_bridge_first():
     assert "awaze-owner-login" in first_url
 
 
+async def test_get_key_figures_raises_on_redirect():
+    """A redirect from key_figures should raise RuntimeError, not a JSON parse error."""
+    sso_resp = mock_response(200, {"data": "User login success"})
+    redirect = mock_response(302, None)
+    redirect.headers = {"location": "/login?redirectTo=/novasol/api/key_figures"}
+    session  = mock_session(sso_resp, redirect)
+    client   = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        with pytest.raises(RuntimeError, match="Drupal session not established"):
+            await client.get_key_figures("D13051")
+
+
 # ── get_reviews() ─────────────────────────────────────────────────────────────
 
 async def test_get_reviews_returns_summary():
