@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] — 2026-04-30
+
+### Fixed
+
+- **Annual / review sensors unavailable** — `GET /novasol/api/key_figures` was redirecting to the login page because the Drupal session had never been established. The client now calls the `GET /awaze-owner-login` SSO bridge (with the existing Bearer token) before every key-figures request, which sets the required server-side session cookie automatically. No configuration change needed.
+
+---
+
 ## [1.0.0] — 2026-04-30
 
 ### Added
