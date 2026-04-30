@@ -187,13 +187,28 @@ class NovaSolApiClient:
 
         return [_parse_booking(b) for b in data.get("bookings", [])]
 
+    async def _ensure_drupal_session(self) -> None:
+        """Call the SSO bridge so the Drupal side recognises our session.
+
+        /novasol/api/ endpoints redirect to /login when there is no active
+        Drupal session.  Calling /awaze-owner-login with the Bearer token
+        establishes that session and the resulting Set-Cookie is stored
+        automatically in the aiohttp session's cookie jar.
+        """
+        async with self._session.get(
+            f"{BASE_URL}/awaze-owner-login",
+            headers=self._auth_headers(),
+        ) as resp:
+            _LOGGER.debug("Drupal SSO bridge: HTTP %s", resp.status)
+
     async def get_key_figures(self, property_id: str) -> dict:
-        """Fetch annual key figures from the Drupal API namespace (cookie auth)."""
+        """Fetch annual key figures from the Drupal API namespace."""
         await self.ensure_valid_token()
+        await self._ensure_drupal_session()
         async with self._session.get(
             f"{BASE_URL}/novasol/api/key_figures",
             params={"rentalId": property_id},
-            headers={"Cookie": f"accessToken={self._access_token}"},
+            headers=self._auth_headers(),
         ) as resp:
             resp.raise_for_status()
             return await resp.json()

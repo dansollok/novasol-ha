@@ -291,14 +291,31 @@ def test_parse_expiry_falls_back_on_garbage():
 # ── get_key_figures() ─────────────────────────────────────────────────────────
 
 async def test_get_key_figures_returns_figures():
-    session = mock_session(mock_response(200, KEY_FIGURES_RESPONSE))
-    client  = make_client(session)
+    # Two GET requests: SSO bridge first, then the actual key_figures call
+    sso_resp = mock_response(200, {"data": "User login success", "status": 200})
+    kf_resp  = mock_response(200, KEY_FIGURES_RESPONSE)
+    session  = mock_session(sso_resp, kf_resp)
+    client   = make_client(session)
 
     with patch.object(client, "ensure_valid_token", return_value=None):
         result = await client.get_key_figures("D13051")
 
     assert result["currency"] == "DKK"
     assert "hire" in result["figures"]
+
+
+async def test_get_key_figures_calls_sso_bridge_first():
+    sso_resp = mock_response(200, {"data": "User login success", "status": 200})
+    kf_resp  = mock_response(200, KEY_FIGURES_RESPONSE)
+    session  = mock_session(sso_resp, kf_resp)
+    client   = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        await client.get_key_figures("D13051")
+
+    assert session.get.call_count == 2
+    first_url = session.get.call_args_list[0][0][0]
+    assert "awaze-owner-login" in first_url
 
 
 # ── get_reviews() ─────────────────────────────────────────────────────────────
