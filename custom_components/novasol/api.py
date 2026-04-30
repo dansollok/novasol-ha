@@ -190,26 +190,30 @@ class NovaSolApiClient:
     async def _ensure_drupal_session(self) -> None:
         """Call the Awaze SSO bridge to establish a Drupal session.
 
-        The bridge is called with both Bearer header and Cookie so either
-        mechanism the Drupal module checks will be satisfied.  allow_redirects
-        is disabled so a redirect-to-login is visible in the logs rather than
-        silently following it and logging a misleading HTTP 200.
+        The endpoint is a JSON API that expects the JWT as the `accessToken`
+        query parameter.  Cookies already in the session jar (accessToken,
+        idToken, expiresAt) are sent automatically; we must NOT override the
+        Cookie header or we suppress those.  allow_redirects is disabled so a
+        redirect-to-login surfaces as a warning rather than a silent HTTP 200.
         """
         async with self._session.get(
             f"{BASE_URL}/awaze-owner-login",
-            headers={
-                **self._auth_headers(),
-                "Cookie": f"accessToken={self._access_token}",
-            },
+            params={"accessToken": self._access_token},
+            headers=self._auth_headers(),
             allow_redirects=False,
         ) as resp:
             ct  = resp.headers.get("content-type", "")
             loc = resp.headers.get("location", "")
+            try:
+                body = await resp.text()
+            except Exception:
+                body = ""
             _LOGGER.debug(
-                "Drupal SSO bridge: HTTP %s, content-type: %s%s",
+                "Drupal SSO bridge: HTTP %s, content-type: %s%s — %s",
                 resp.status,
                 ct,
                 f", redirect→ {loc}" if loc else "",
+                body[:200],
             )
             if resp.status in (301, 302, 303, 307, 308):
                 _LOGGER.warning(
@@ -218,16 +222,6 @@ class NovaSolApiClient:
                     loc,
                 )
                 return
-
-            # Log the response body so we can tell whether the bridge returned
-            # a success payload or a silent error (both come back as HTTP 200).
-            try:
-                body = await resp.text()
-                _LOGGER.debug("Drupal SSO bridge response body: %s", body[:500])
-            except Exception:
-                pass
-
-            # Log which (if any) session cookies were set by the bridge.
             try:
                 cookie_names = [c.key for c in self._session.cookie_jar]  # type: ignore[attr-defined]
                 _LOGGER.debug("Session cookies after SSO bridge: %s", cookie_names or "none")
