@@ -217,6 +217,22 @@ class NovaSolApiClient:
                     "Drupal session not established; /novasol/api/ sensors unavailable",
                     loc,
                 )
+                return
+
+            # Log the response body so we can tell whether the bridge returned
+            # a success payload or a silent error (both come back as HTTP 200).
+            try:
+                body = await resp.text()
+                _LOGGER.debug("Drupal SSO bridge response body: %s", body[:500])
+            except Exception:
+                pass
+
+            # Log which (if any) session cookies were set by the bridge.
+            try:
+                cookie_names = [c.key for c in self._session.cookie_jar]  # type: ignore[attr-defined]
+                _LOGGER.debug("Session cookies after SSO bridge: %s", cookie_names or "none")
+            except Exception:
+                pass
 
     async def get_key_figures(self, property_id: str) -> dict:
         """Fetch annual key figures from the Drupal API namespace."""
