@@ -3,17 +3,15 @@ from __future__ import annotations
 
 import logging
 
+import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import NovaSolApiClient
 from .const import (
-    CONF_ACCESS_TOKEN,
     CONF_PROPERTY_ID,
-    CONF_REFRESH_TOKEN,
-    CONF_TOKEN_EXPIRY,
     CONF_UNIT_ID,
     DOMAIN,
 )
@@ -25,17 +23,21 @@ PLATFORMS = [Platform.CALENDAR, Platform.SENSOR, Platform.BINARY_SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    session = async_get_clientsession(hass)
+    # Use a dedicated session (not the shared HA session) so that the login
+    # response cookies (accessToken, idToken, expiresAt, …) are stored in a
+    # private jar and sent automatically on every subsequent request —
+    # including the /awaze-owner-login SSO bridge which needs them all.
+    session = aiohttp.ClientSession()
+
     client = NovaSolApiClient(
         session,
         entry.data[CONF_USERNAME],
         entry.data[CONF_PASSWORD],
     )
-    client.load_tokens(
-        access_token=entry.data.get(CONF_ACCESS_TOKEN, ""),
-        refresh_token=entry.data.get(CONF_REFRESH_TOKEN, ""),
-        expiry=entry.data.get(CONF_TOKEN_EXPIRY, 0.0),
-    )
+    # Always do a full login on startup so the server sets all auth cookies
+    # (accessToken, idToken, expiresAt, …) in our private jar.  The SSO bridge
+    # for /novasol/api/ endpoints requires ALL of these to be present.
+    await client.authenticate()
 
     coordinator = NovaSolCoordinator(
         hass,
@@ -57,6 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "bookings": coordinator,
         "stats":    stats_coordinator,
+        "session":  session,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -65,5 +68,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        data = hass.data[DOMAIN].pop(entry.entry_id, {})
+        await data["session"].close()
     return unloaded
