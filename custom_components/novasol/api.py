@@ -190,15 +190,17 @@ class NovaSolApiClient:
     async def _ensure_drupal_session(self) -> None:
         """Call the Awaze SSO bridge to establish a Drupal session.
 
-        The endpoint is a JSON API that expects the JWT as the `accessToken`
-        query parameter.  Cookies already in the session jar (accessToken,
-        idToken, expiresAt) are sent automatically; we must NOT override the
-        Cookie header or we suppress those.  allow_redirects is disabled so a
+        The endpoint is a JSON API that expects a POST body with at least
+        `accessToken` and `username`; a GET or query-param approach returns
+        422 "User parameters missing".  allow_redirects is disabled so a
         redirect-to-login surfaces as a warning rather than a silent HTTP 200.
         """
-        async with self._session.get(
+        async with self._session.post(
             f"{BASE_URL}/awaze-owner-login",
-            params={"accessToken": self._access_token},
+            json={
+                "accessToken": self._access_token,
+                "username":    self._username,
+            },
             headers=self._auth_headers(),
             allow_redirects=False,
         ) as resp:
