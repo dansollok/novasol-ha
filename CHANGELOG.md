@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.2.0] — 2026-05-24
+
+### Added
+
+#### Key-box code sensor
+- `keybox_code` — the property's key-box door code, read from `/v1/property/{id}` and updated every 24 hours.
+
+#### Review detail sensors (14 new, all updated every 24 hours)
+
+**Overall category averages** — aggregated across all reviews:
+- `review_score_value_for_money`
+- `review_score_location`
+- `review_score_facilities`
+- `review_score_comfort`
+- `review_score_cleanliness`
+
+**Most recent individual review:**
+- `latest_review_score` — overall score for the newest review
+- `latest_review_date` — date of the stay being reviewed
+- `latest_review_text` — the full review text
+- `latest_reviewer` — reviewer's first name (None if anonymous)
+
+**Most recent review — per-category scores:**
+- `latest_review_score_value_for_money`
+- `latest_review_score_location`
+- `latest_review_score_facilities`
+- `latest_review_score_comfort`
+- `latest_review_score_cleanliness`
+
+### Improved
+
+- **Transient error retry** — API calls to `/v1/property/{id}`, `/v1/properties/{id}/customerReviews`, and `/novasol/api/key_figures` now retry up to 3 times (after 2 s then 5 s) when the server returns 502, 503, or 504. This addresses intermittent gateway errors observed in production.
+
+---
+
 ## [1.1.1] — 2026-05-24
 
 ### Added

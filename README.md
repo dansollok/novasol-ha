@@ -12,9 +12,9 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 ## Features
 
 - **Calendar entity** — all bookings visible in the HA calendar card, with guest name, nationality flag, party size, and owner income in the description
-- **Sensors** — 24 entities across two update cycles:
+- **Sensors** — 38 entities across two update cycles:
   - *Every 6 hours:* next guest details, current stay, party composition, booking financials, occupancy, and integration health
-  - *Every 24 hours:* annual income, guest days, electricity cost, occupancy rate, and Feefo review score
+  - *Every 24 hours:* annual performance, key-box code, review averages per category, and full latest-review breakdown
 - **Binary sensor** — Occupancy (on when a guest is currently checked in, with guest details as attributes)
 - **Automatic token refresh** — access tokens are refreshed silently every hour; if the refresh token expires the integration re-logs in automatically using your stored credentials
 - **Multi-property support** — if your account has multiple properties, the config flow lets you pick which one to track
@@ -91,15 +91,41 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 
 #### Updated every 24 hours
 
+**Annual performance**
+
 | Entity | Description |
 |--------|-------------|
 | `sensor.novasol_XXXXX_annual_income` | Total owner hire income for the current calendar year (DKK) |
 | `sensor.novasol_XXXXX_annual_guest_days` | Total guest nights for the current calendar year |
 | `sensor.novasol_XXXXX_annual_electricity` | Electricity cost charged to owner for the current year (DKK) |
 | `sensor.novasol_XXXXX_annual_occupancy` | Occupancy rate for the current year — guest days as a percentage of available days (%) |
-| `sensor.novasol_XXXXX_review_score` | Overall Feefo guest review score (0–5) |
+| `sensor.novasol_XXXXX_keybox_code` | Key-box door code for the property |
+
+**Guest review summary** (aggregated across all reviews)
+
+| Entity | Description |
+|--------|-------------|
+| `sensor.novasol_XXXXX_review_score` | Overall Feefo average score (0–5) |
 | `sensor.novasol_XXXXX_review_count` | Total number of guest reviews |
-| `sensor.novasol_XXXXX_keybox_code` | Key-box code for the property |
+| `sensor.novasol_XXXXX_review_score_value_for_money` | Average score — value for money |
+| `sensor.novasol_XXXXX_review_score_location` | Average score — location / surroundings |
+| `sensor.novasol_XXXXX_review_score_facilities` | Average score — facilities |
+| `sensor.novasol_XXXXX_review_score_comfort` | Average score — comfort |
+| `sensor.novasol_XXXXX_review_score_cleanliness` | Average score — cleanliness |
+
+**Most recent review**
+
+| Entity | Description |
+|--------|-------------|
+| `sensor.novasol_XXXXX_latest_review_score` | Overall score for the newest guest review |
+| `sensor.novasol_XXXXX_latest_review_date` | Date of the stay that was reviewed |
+| `sensor.novasol_XXXXX_latest_review_text` | Full review text |
+| `sensor.novasol_XXXXX_latest_reviewer` | Reviewer's first name (None if anonymous) |
+| `sensor.novasol_XXXXX_latest_review_score_value_for_money` | Latest review — value for money |
+| `sensor.novasol_XXXXX_latest_review_score_location` | Latest review — location / surroundings |
+| `sensor.novasol_XXXXX_latest_review_score_facilities` | Latest review — facilities |
+| `sensor.novasol_XXXXX_latest_review_score_comfort` | Latest review — comfort |
+| `sensor.novasol_XXXXX_latest_review_score_cleanliness` | Latest review — cleanliness |
 
 ### Binary sensor
 
@@ -153,9 +179,9 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 ## Funktioner
 
 - **Kalender-enhed** — alle bookinger synlige i HA kalender-kortet, med gæstenavn, nationalitetsflag, antal personer og ejerindtægt i beskrivelsen
-- **Sensorer** — 24 entiteter fordelt på to opdateringscyklusser:
+- **Sensorer** — 38 entiteter fordelt på to opdateringscyklusser:
   - *Hvert 6. time:* næste gæsts detaljer, igangværende ophold, selskabsstørrelse, økonomi, belægning og integrationsstatus
-  - *Hvert 24. time:* årsindtægt, gæstedage, elforbrug, belægningsprocent og Feefo-anmeldelsesscore
+  - *Hvert 24. time:* årsstatistik, nøgleboks kode, gennemsnitlige anmeldelsesscorer pr. kategori og fuld opdeling af seneste anmeldelse
 - **Binær sensor** — Belægning (tændt når en gæst er tjekket ind, med gæstedetaljer som attributter)
 - **Automatisk token-fornyelse** — adgangstokens fornyes lydløst hver time; udløber refresh-token, logger integrationen automatisk ind igen med de gemte credentials
 - **Understøttelse af flere ejendomme** — har din konto flere ejendomme, kan du vælge hvilken der skal synkroniseres under opsætningen
@@ -232,15 +258,41 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 
 #### Opdateres hvert 24. time
 
+**Årsstatistik**
+
 | Entitet | Beskrivelse |
 |---------|-------------|
 | `sensor.novasol_XXXXX_annual_income` | Samlet ejerindtægt for indeværende kalenderår (DKK) |
 | `sensor.novasol_XXXXX_annual_guest_days` | Samlet antal gæstenætter for indeværende kalenderår |
 | `sensor.novasol_XXXXX_annual_electricity` | Elforbrug debiteret ejer for indeværende år (DKK) |
 | `sensor.novasol_XXXXX_annual_occupancy` | Belægningsprocent for indeværende år — gæstedage som andel af disponible dage (%) |
-| `sensor.novasol_XXXXX_review_score` | Samlet Feefo-gæsteanmeldelsesscore (0–5) |
-| `sensor.novasol_XXXXX_review_count` | Samlet antal gæsteanmeldelser |
 | `sensor.novasol_XXXXX_keybox_code` | Nøgleboksens kode for ejendommen |
+
+**Anmeldelsessammenfatning** (gennemsnit på tværs af alle anmeldelser)
+
+| Entitet | Beskrivelse |
+|---------|-------------|
+| `sensor.novasol_XXXXX_review_score` | Samlet Feefo-gennemsnitsscore (0–5) |
+| `sensor.novasol_XXXXX_review_count` | Samlet antal gæsteanmeldelser |
+| `sensor.novasol_XXXXX_review_score_value_for_money` | Gennemsnitsscore — værdi for pengene |
+| `sensor.novasol_XXXXX_review_score_location` | Gennemsnitsscore — omgivelser |
+| `sensor.novasol_XXXXX_review_score_facilities` | Gennemsnitsscore — faciliteter |
+| `sensor.novasol_XXXXX_review_score_comfort` | Gennemsnitsscore — komfort |
+| `sensor.novasol_XXXXX_review_score_cleanliness` | Gennemsnitsscore — rengøring |
+
+**Seneste anmeldelse**
+
+| Entitet | Beskrivelse |
+|---------|-------------|
+| `sensor.novasol_XXXXX_latest_review_score` | Samlet score for den seneste gæsteanmeldelse |
+| `sensor.novasol_XXXXX_latest_review_date` | Dato for det ophold der er anmeldt |
+| `sensor.novasol_XXXXX_latest_review_text` | Den fulde anmeldelsestekst |
+| `sensor.novasol_XXXXX_latest_reviewer` | Anmelderens fornavn (None ved anonym) |
+| `sensor.novasol_XXXXX_latest_review_score_value_for_money` | Seneste anmeldelse — værdi for pengene |
+| `sensor.novasol_XXXXX_latest_review_score_location` | Seneste anmeldelse — omgivelser |
+| `sensor.novasol_XXXXX_latest_review_score_facilities` | Seneste anmeldelse — faciliteter |
+| `sensor.novasol_XXXXX_latest_review_score_comfort` | Seneste anmeldelse — komfort |
+| `sensor.novasol_XXXXX_latest_review_score_cleanliness` | Seneste anmeldelse — rengøring |
 
 ### Binær sensor
 
