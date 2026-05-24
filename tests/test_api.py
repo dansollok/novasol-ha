@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import time
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -288,16 +288,42 @@ def test_parse_expiry_falls_back_on_garbage():
     assert abs(expiry - (time.time() + 3300)) < 10
 
 
+# ── _ensure_drupal_session() ──────────────────────────────────────────────────
+
+async def test_ensure_drupal_session_posts_to_sso_bridge():
+    sso_resp = mock_response(200, {"data": "User login success", "status": 200})
+    session  = mock_session(sso_resp)
+    client   = make_client(session)
+    client.load_tokens(make_jwt(), "ref", time.time() + 9999)
+
+    await client._ensure_drupal_session()
+
+    session.post.assert_called_once()
+    url = session.post.call_args[0][0]
+    assert "awaze-owner-login" in url
+
+
+async def test_ensure_drupal_session_sends_access_token_and_username():
+    sso_resp = mock_response(200, {"data": "User login success", "status": 200})
+    session  = mock_session(sso_resp)
+    client   = make_client(session, username="owner@example.com")
+    client.load_tokens(make_jwt(), "ref", time.time() + 9999)
+
+    await client._ensure_drupal_session()
+
+    payload = session.post.call_args[1]["json"]
+    assert payload["username"] == "owner@example.com"
+    assert "accessToken" in payload
+
+
 # ── get_key_figures() ─────────────────────────────────────────────────────────
 
 async def test_get_key_figures_returns_figures():
-    # Two GET requests: SSO bridge first, then the actual key_figures call
-    sso_resp = mock_response(200, {"data": "User login success", "status": 200})
-    kf_resp  = mock_response(200, KEY_FIGURES_RESPONSE)
-    session  = mock_session(sso_resp, kf_resp)
-    client   = make_client(session)
+    session = mock_session(mock_response(200, KEY_FIGURES_RESPONSE))
+    client  = make_client(session)
 
-    with patch.object(client, "ensure_valid_token", return_value=None):
+    with patch.object(client, "ensure_valid_token", return_value=None), \
+         patch.object(client, "_ensure_drupal_session", new=AsyncMock()):
         result = await client.get_key_figures("D13051")
 
     assert result["currency"] == "DKK"
@@ -305,28 +331,26 @@ async def test_get_key_figures_returns_figures():
 
 
 async def test_get_key_figures_calls_sso_bridge_first():
-    sso_resp = mock_response(200, {"data": "User login success", "status": 200})
-    kf_resp  = mock_response(200, KEY_FIGURES_RESPONSE)
-    session  = mock_session(sso_resp, kf_resp)
+    session  = mock_session(mock_response(200, KEY_FIGURES_RESPONSE))
     client   = make_client(session)
+    mock_sso = AsyncMock()
 
-    with patch.object(client, "ensure_valid_token", return_value=None):
+    with patch.object(client, "ensure_valid_token", return_value=None), \
+         patch.object(client, "_ensure_drupal_session", new=mock_sso):
         await client.get_key_figures("D13051")
 
-    assert session.get.call_count == 2
-    first_url = session.get.call_args_list[0][0][0]
-    assert "awaze-owner-login" in first_url
+    mock_sso.assert_called_once()
 
 
 async def test_get_key_figures_raises_on_redirect():
-    """A redirect from key_figures should raise RuntimeError, not a JSON parse error."""
-    sso_resp = mock_response(200, {"data": "User login success"})
+    """A redirect from key_figures raises RuntimeError with a clear message."""
     redirect = mock_response(302, None)
     redirect.headers = {"location": "/login?redirectTo=/novasol/api/key_figures"}
-    session  = mock_session(sso_resp, redirect)
+    session  = mock_session(redirect)
     client   = make_client(session)
 
-    with patch.object(client, "ensure_valid_token", return_value=None):
+    with patch.object(client, "ensure_valid_token", return_value=None), \
+         patch.object(client, "_ensure_drupal_session", new=AsyncMock()):
         with pytest.raises(RuntimeError, match="Drupal session not established"):
             await client.get_key_figures("D13051")
 

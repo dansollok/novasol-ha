@@ -190,48 +190,48 @@ class NovaSolApiClient:
     async def _ensure_drupal_session(self) -> None:
         """Call the Awaze SSO bridge to establish a Drupal session.
 
-        Requires a POST with JSON body {accessToken, username} — GET and
-        query-param approaches all return 422 "User parameters missing".
-        On success the server sets a Drupal SSESS cookie that authorises
-        subsequent /novasol/api/ requests.
+        A POST with JSON body {accessToken, username} is required.  GET and
+        query-param approaches return 422 "User parameters missing".  On success
+        the server sets a Drupal SSESS cookie; allow_redirects is left enabled so
+        any server-side redirect chain completes and the cookie is stored.
         """
         async with self._session.post(
             f"{BASE_URL}/awaze-owner-login",
             json={"accessToken": self._access_token, "username": self._username},
-            allow_redirects=False,
         ) as resp:
             try:
                 body = await resp.text()
             except Exception:
                 body = ""
-            loc = resp.headers.get("location", "")
             _LOGGER.debug(
-                "Drupal SSO bridge: HTTP %s%s — %s",
+                "Drupal SSO bridge: HTTP %s — %s",
                 resp.status,
-                f", redirect→ {loc}" if loc else "",
                 body[:200],
             )
             if "User login success" not in body:
                 _LOGGER.warning(
-                    "Drupal SSO bridge did not confirm login: %s — "
-                    "/novasol/api/ sensors may be unavailable",
+                    "Drupal SSO bridge did not confirm login (HTTP %s): %s",
+                    resp.status,
                     body[:200],
                 )
 
     async def get_key_figures(self, property_id: str) -> dict:
-        """Fetch annual key figures from the Drupal API namespace."""
+        """Fetch annual key figures from the Drupal API namespace.
+
+        Uses session cookies (set by authenticate() and the SSO bridge) rather
+        than Bearer tokens — no Authorization header is sent.
+        """
         await self.ensure_valid_token()
         await self._ensure_drupal_session()
         async with self._session.get(
             f"{BASE_URL}/novasol/api/key_figures",
             params={"rentalId": property_id},
-            headers=self._auth_headers(),
             allow_redirects=False,
         ) as resp:
             if resp.status in (301, 302, 303, 307, 308):
                 raise RuntimeError(
                     f"key_figures redirected to {resp.headers.get('location', '?')}"
-                    " — Drupal session not established"
+                    " — Drupal session not established; restart HA to re-authenticate"
                 )
             resp.raise_for_status()
             return await resp.json()
