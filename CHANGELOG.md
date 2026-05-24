@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1] — 2026-05-24
+
+### Added
+
+- **Key-box code sensor** — `sensor.novasol_XXXXX_keybox_code` exposes the property's key-box code, read from the `/v1/property/{id}` endpoint. Updated every 24 hours alongside the other annual stats sensors.
+
+---
+
 ## [1.1.0] — 2026-05-24
 
 ### Fixed
