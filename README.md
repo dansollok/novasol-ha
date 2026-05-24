@@ -120,7 +120,7 @@ The integration polls every 6 hours. To force a refresh go to Settings → Devic
 Year-to-date income counts bookings made (booked-on date) in the current calendar year. Bookings placed last year for stays this year are not included.
 
 **Annual / review sensors show as unavailable**  
-These sensors update every 24 hours from a separate API namespace (`/novasol/api/`). If they stay unavailable after 24 hours, the portal's cookie-based authentication for that namespace may not be working yet. The booking sensors and calendar are not affected — they use the standard bearer-token API. Check the HA logs for `Failed to fetch key figures` or `Failed to fetch reviews` warnings.
+These sensors update every 24 hours from a separate API namespace (`/novasol/api/`) that uses Drupal cookie-based authentication. On each HA startup the integration performs a full login so all required cookies are established automatically. If the sensors ever show as unavailable, restarting Home Assistant triggers a fresh re-authentication and should resolve it. The booking sensors and calendar are not affected — they use the standard bearer-token API. Check the HA logs for `Failed to fetch key figures` or `Failed to fetch reviews` warnings for details.
 
 **How do I verify the integration is running?**  
 Check `sensor.novasol_XXXXX_last_successful_poll` — it updates every time data is fetched successfully. If it stops advancing, something is wrong. For detailed logs add this to `configuration.yaml` and restart:
@@ -260,7 +260,7 @@ Integrationen henter data hvert 6. time. For at tvinge en opdatering: Indstillin
 Årets indtægt til dato tæller bookinger der er foretaget (bestillingsdato) i det aktuelle kalenderår. Bookinger foretaget sidste år med ophold i år tælles ikke med.
 
 **Årsstatistik- og anmeldelsessensorer vises som utilgængelige**  
-Disse sensorer opdateres hvert 24. time fra et separat API-navnerum (`/novasol/api/`). Forbliver de utilgængelige efter 24 timer, fungerer portalens cookie-baserede autentificering for dette navnerum muligvis ikke endnu. Booking-sensorerne og kalenderen er ikke berørt — de bruger det normale bearer-token API. Tjek HA-logs for advarslerne `Failed to fetch key figures` eller `Failed to fetch reviews`.
+Disse sensorer opdateres hvert 24. time fra et separat API-navnerum (`/novasol/api/`) der bruger Drupal cookie-baseret autentificering. Ved hver HA-opstart foretager integrationen et fuldt login, så alle nødvendige cookies oprettes automatisk. Hvis sensorerne alligevel vises som utilgængelige, vil en genstart af Home Assistant udløse en ny autentificering og bør løse problemet. Booking-sensorerne og kalenderen er ikke berørt — de bruger det normale bearer-token API. Tjek HA-logs for advarslerne `Failed to fetch key figures` eller `Failed to fetch reviews` for detaljer.
 
 **Hvordan ved jeg om integrationen kører?**  
 Tjek `sensor.novasol_XXXXX_last_successful_poll` — den opdateres hver gang data hentes. Hvis den holder op med at skifte, er der et problem. For detaljerede logs tilføj dette til `configuration.yaml` og genstart:
