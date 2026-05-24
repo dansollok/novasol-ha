@@ -1,6 +1,7 @@
 """Novasol API client — pure aiohttp, no browser dependency."""
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -15,6 +16,11 @@ _LOGGER = logging.getLogger(__name__)
 
 # How many seconds before expiry we proactively refresh
 _REFRESH_BUFFER_SECONDS = 300
+
+# Transient HTTP errors worth retrying (gateway/upstream blips)
+_TRANSIENT_ERRORS = frozenset({502, 503, 504})
+# Seconds to wait before retry attempts 2 and 3
+_RETRY_DELAYS = (2, 5)
 
 
 class AuthError(Exception):
@@ -118,6 +124,21 @@ class NovaSolApiClient:
             return
         _LOGGER.info("Refresh token expired or missing — performing full re-login")
         await self.authenticate()
+
+    # ── HTTP helpers ──────────────────────────────────────────────────────────
+
+    async def _get_json(self, url: str, **kwargs) -> dict:
+        """GET JSON with up to 3 attempts, backing off on 502/503/504."""
+        for attempt in range(len(_RETRY_DELAYS) + 1):
+            if attempt:
+                delay = _RETRY_DELAYS[attempt - 1]
+                _LOGGER.warning("GET %s: transient error, retry %d/%d in %ds", url, attempt, len(_RETRY_DELAYS), delay)
+                await asyncio.sleep(delay)
+            async with self._session.get(url, **kwargs) as resp:
+                if resp.status in _TRANSIENT_ERRORS and attempt < len(_RETRY_DELAYS):
+                    continue
+                resp.raise_for_status()
+                return await resp.json()
 
     # ── API calls ─────────────────────────────────────────────────────────────
 
@@ -223,40 +244,44 @@ class NovaSolApiClient:
         """
         await self.ensure_valid_token()
         await self._ensure_drupal_session()
-        async with self._session.get(
-            f"{BASE_URL}/novasol/api/key_figures",
-            params={"rentalId": property_id},
-            allow_redirects=False,
-        ) as resp:
-            if resp.status in (301, 302, 303, 307, 308):
-                raise RuntimeError(
-                    f"key_figures redirected to {resp.headers.get('location', '?')}"
-                    " — Drupal session not established; restart HA to re-authenticate"
-                )
-            resp.raise_for_status()
-            return await resp.json()
+        url = f"{BASE_URL}/novasol/api/key_figures"
+        for attempt in range(len(_RETRY_DELAYS) + 1):
+            if attempt:
+                delay = _RETRY_DELAYS[attempt - 1]
+                _LOGGER.warning("key_figures: transient error, retry %d/%d in %ds", attempt, len(_RETRY_DELAYS), delay)
+                await asyncio.sleep(delay)
+            async with self._session.get(
+                url,
+                params={"rentalId": property_id},
+                allow_redirects=False,
+            ) as resp:
+                if resp.status in (301, 302, 303, 307, 308):
+                    raise RuntimeError(
+                        f"key_figures redirected to {resp.headers.get('location', '?')}"
+                        " — Drupal session not established; restart HA to re-authenticate"
+                    )
+                if resp.status in _TRANSIENT_ERRORS and attempt < len(_RETRY_DELAYS):
+                    continue
+                resp.raise_for_status()
+                return await resp.json()
 
     async def get_property_detail(self, property_id: str) -> dict:
         """Fetch the property detail page, which contains the key-box code."""
         await self.ensure_valid_token()
-        async with self._session.get(
+        return await self._get_json(
             f"{BASE_URL}/v1/property/{property_id}",
             params={"lang": "da"},
             headers=self._auth_headers(),
-        ) as resp:
-            resp.raise_for_status()
-            return await resp.json()
+        )
 
     async def get_reviews(self, property_id: str) -> dict:
         """Fetch guest review summary from Feefo via the v1 API."""
         await self.ensure_valid_token()
-        async with self._session.get(
+        return await self._get_json(
             f"{BASE_URL}/v1/properties/{property_id}/customerReviews",
             params={"language": "da"},
             headers=self._auth_headers(),
-        ) as resp:
-            resp.raise_for_status()
-            return await resp.json()
+        )
 
     async def get_booking_detail(self, booking_id: str) -> dict | None:
         """Fetch rich detail for a single customer booking."""

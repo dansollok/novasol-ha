@@ -415,3 +415,19 @@ async def test_get_property_detail_fallback_to_arrival_keycode():
         data = await client.get_property_detail("D13051")
 
     assert data["arrival"]["keyLocation"]["keyCode"] == "9999"
+
+
+async def test_get_property_detail_retries_on_502():
+    """A 502 on the first attempt is retried; the second attempt succeeds."""
+    session = mock_session(
+        mock_response(502, None),
+        mock_response(200, PROPERTY_DETAIL_RESPONSE),
+    )
+    client = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None), \
+         patch("custom_components.novasol.api.asyncio.sleep", new=AsyncMock()):
+        data = await client.get_property_detail("D13051")
+
+    assert data["location"]["keyBoxCode"] == "6072"
+    assert session.get.call_count == 2
