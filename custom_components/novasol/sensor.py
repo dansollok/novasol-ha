@@ -296,6 +296,36 @@ STATS_SENSORS: tuple[NovaSolSensorDescription, ...] = (
         value_fn=lambda d: d.get("latest_reviewer"),
     ),
     NovaSolSensorDescription(
+        key="latest_review_score_value_for_money",
+        name="Latest review: value for money",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("latest_review_cat_value_for_money"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_score_location",
+        name="Latest review: location",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("latest_review_cat_location"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_score_facilities",
+        name="Latest review: facilities",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("latest_review_cat_facilities"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_score_comfort",
+        name="Latest review: comfort",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("latest_review_cat_comfort"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_score_cleanliness",
+        name="Latest review: cleanliness",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("latest_review_cat_cleanliness"),
+    ),
+    NovaSolSensorDescription(
         key="keybox_code",
         name="Key-box code",
         value_fn=lambda d: d.get("keybox_code"),

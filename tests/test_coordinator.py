@@ -328,3 +328,25 @@ async def test_stats_latest_reviewer_none_when_name_is_empty_string():
     data = await coord._async_update_data()
 
     assert data["latest_reviewer"] is None
+
+
+# ── Latest review category scores ─────────────────────────────────────────────
+
+async def test_stats_parses_latest_review_category_scores():
+    coord = make_stats_coordinator(reviews=REVIEWS_RESPONSE)
+    data = await coord._async_update_data()
+
+    # First review in fixture: value-for-money=4, location=4, facilities=5, comfort=5, cleanliness=5
+    assert data["latest_review_cat_value_for_money"] == 4
+    assert data["latest_review_cat_location"]        == 4
+    assert data["latest_review_cat_facilities"]      == 5
+    assert data["latest_review_cat_comfort"]         == 5
+    assert data["latest_review_cat_cleanliness"]     == 5
+
+
+async def test_stats_latest_review_cats_none_when_no_reviews():
+    coord = make_stats_coordinator(reviews={"averageScore": 5, "numberOfReviews": 0, "reviews": []})
+    data = await coord._async_update_data()
+
+    assert data["latest_review_cat_value_for_money"] is None
+    assert data["latest_review_cat_cleanliness"]     is None
