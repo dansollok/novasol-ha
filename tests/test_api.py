@@ -14,6 +14,7 @@ from .conftest import (
     LOGIN_RESPONSE,
     OWNER_BLOCK,
     PROPERTIES_RESPONSE,
+    PROPERTY_DETAIL_RESPONSE,
     REFRESH_RESPONSE,
     REVIEWS_RESPONSE,
     make_jwt,
@@ -369,3 +370,48 @@ async def test_get_reviews_returns_summary():
     assert result["provider"]        == "Feefo"
 
 
+# ── get_property_detail() ─────────────────────────────────────────────────────
+
+async def test_get_property_detail_returns_keybox_code():
+    session = mock_session(mock_response(200, PROPERTY_DETAIL_RESPONSE))
+    client  = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        data = await client.get_property_detail("D13051")
+
+    assert data["location"]["keyBoxCode"] == "6072"
+
+
+async def test_get_property_detail_uses_bearer_auth():
+    session = mock_session(mock_response(200, PROPERTY_DETAIL_RESPONSE))
+    client  = make_client(session)
+    client.load_tokens("test-token", "ref", time.time() + 9999)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        await client.get_property_detail("D13051")
+
+    headers = session.get.call_args[1]["headers"]
+    assert headers["Authorization"] == "Bearer test-token"
+
+
+async def test_get_property_detail_passes_lang_param():
+    session = mock_session(mock_response(200, PROPERTY_DETAIL_RESPONSE))
+    client  = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        await client.get_property_detail("D13051")
+
+    params = session.get.call_args[1]["params"]
+    assert params["lang"] == "da"
+
+
+async def test_get_property_detail_fallback_to_arrival_keycode():
+    """arrival.keyLocation.keyCode is used when location.keyBoxCode is absent."""
+    detail = {"arrival": {"keyLocation": {"keyCode": "9999"}}}
+    session = mock_session(mock_response(200, detail))
+    client  = make_client(session)
+
+    with patch.object(client, "ensure_valid_token", return_value=None):
+        data = await client.get_property_detail("D13051")
+
+    assert data["arrival"]["keyLocation"]["keyCode"] == "9999"

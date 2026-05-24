@@ -241,6 +241,11 @@ STATS_SENSORS: tuple[NovaSolSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda d: d.get("review_count"),
     ),
+    NovaSolSensorDescription(
+        key="keybox_code",
+        name="Key-box code",
+        value_fn=lambda d: d.get("keybox_code"),
+    ),
 )
 
 

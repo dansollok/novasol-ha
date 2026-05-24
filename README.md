@@ -99,6 +99,7 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 | `sensor.novasol_XXXXX_annual_occupancy` | Occupancy rate for the current year — guest days as a percentage of available days (%) |
 | `sensor.novasol_XXXXX_review_score` | Overall Feefo guest review score (0–5) |
 | `sensor.novasol_XXXXX_review_count` | Total number of guest reviews |
+| `sensor.novasol_XXXXX_keybox_code` | Key-box code for the property |
 
 ### Binary sensor
 
@@ -239,6 +240,7 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 | `sensor.novasol_XXXXX_annual_occupancy` | Belægningsprocent for indeværende år — gæstedage som andel af disponible dage (%) |
 | `sensor.novasol_XXXXX_review_score` | Samlet Feefo-gæsteanmeldelsesscore (0–5) |
 | `sensor.novasol_XXXXX_review_count` | Samlet antal gæsteanmeldelser |
+| `sensor.novasol_XXXXX_keybox_code` | Nøgleboksens kode for ejendommen |
 
 ### Binær sensor
 

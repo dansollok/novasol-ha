@@ -236,6 +236,17 @@ class NovaSolApiClient:
             resp.raise_for_status()
             return await resp.json()
 
+    async def get_property_detail(self, property_id: str) -> dict:
+        """Fetch the property detail page, which contains the key-box code."""
+        await self.ensure_valid_token()
+        async with self._session.get(
+            f"{BASE_URL}/v1/property/{property_id}",
+            params={"lang": "da"},
+            headers=self._auth_headers(),
+        ) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
     async def get_reviews(self, property_id: str) -> dict:
         """Fetch guest review summary from Feefo via the v1 API."""
         await self.ensure_valid_token()

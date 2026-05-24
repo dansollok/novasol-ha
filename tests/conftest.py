@@ -376,6 +376,18 @@ REVIEWS_RESPONSE = {
     "reviews": [],
 }
 
+PROPERTY_DETAIL_RESPONSE = {
+    "location": {
+        "keyBoxCode": "6072",
+    },
+    "arrival": {
+        "keyLocation": {
+            "keyCode": "6072",
+            "location": ["Front door", "right side"],
+        }
+    },
+}
+
 BOOKINGLIST_RESPONSE = {
     "fromDate":   "2026-01-01",
     "toDate":     "2027-12-31",

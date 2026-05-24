@@ -169,6 +169,12 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
         except Exception as exc:
             _LOGGER.warning("Failed to fetch reviews: %s", exc)
 
+        property_detail: dict = {}
+        try:
+            property_detail = await self._client.get_property_detail(self.property_id)
+        except Exception as exc:
+            _LOGGER.warning("Failed to fetch property detail: %s", exc)
+
         figures = key_figures.get("figures", {})
         events  = key_figures.get("events", {})
 
@@ -183,6 +189,11 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
         booked_days = booked.get(year) or 0
         occupancy   = round(booked_days / available * 100, 1) if available > 0 else None
 
+        keybox_code = (
+            property_detail.get("location", {}).get("keyBoxCode")
+            or property_detail.get("arrival", {}).get("keyLocation", {}).get("keyCode")
+        )
+
         return {
             "annual_income":      hire.get(year),
             "annual_guest_days":  days.get(year),
@@ -190,4 +201,5 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
             "annual_occupancy":   occupancy,
             "review_score":       reviews.get("averageScore"),
             "review_count":       reviews.get("numberOfReviews"),
+            "keybox_code":        keybox_code,
         }
