@@ -242,6 +242,60 @@ STATS_SENSORS: tuple[NovaSolSensorDescription, ...] = (
         value_fn=lambda d: d.get("review_count"),
     ),
     NovaSolSensorDescription(
+        key="review_score_value_for_money",
+        name="Review: value for money",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_cat_value_for_money"),
+    ),
+    NovaSolSensorDescription(
+        key="review_score_location",
+        name="Review: location",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_cat_location"),
+    ),
+    NovaSolSensorDescription(
+        key="review_score_facilities",
+        name="Review: facilities",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_cat_facilities"),
+    ),
+    NovaSolSensorDescription(
+        key="review_score_comfort",
+        name="Review: comfort",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_cat_comfort"),
+    ),
+    NovaSolSensorDescription(
+        key="review_score_cleanliness",
+        name="Review: cleanliness",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("review_cat_cleanliness"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_score",
+        name="Latest review score",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda d: d.get("latest_review_score"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_date",
+        name="Latest review date",
+        device_class=SensorDeviceClass.DATE,
+        value_fn=lambda d: (
+            date.fromisoformat(d["latest_review_date"]) if d.get("latest_review_date") else None
+        ),
+    ),
+    NovaSolSensorDescription(
+        key="latest_review_text",
+        name="Latest review",
+        value_fn=lambda d: d.get("latest_review_text"),
+    ),
+    NovaSolSensorDescription(
+        key="latest_reviewer",
+        name="Latest reviewer",
+        value_fn=lambda d: d.get("latest_reviewer"),
+    ),
+    NovaSolSensorDescription(
         key="keybox_code",
         name="Key-box code",
         value_fn=lambda d: d.get("keybox_code"),

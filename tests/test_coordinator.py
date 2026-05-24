@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from custom_components.novasol.coordinator import NovaSolCoordinator, NovaSolStatsCoordinator
-from .conftest import KEY_FIGURES_RESPONSE, REVIEWS_RESPONSE
+from .conftest import KEY_FIGURES_RESPONSE, PROPERTY_DETAIL_RESPONSE, REVIEWS_RESPONSE
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ async def test_update_empty_bookings():
 
 # ── NovaSolStatsCoordinator ───────────────────────────────────────────────────
 
-def make_stats_coordinator(key_figures=None, reviews=None, kf_exc=None, rev_exc=None):
+def make_stats_coordinator(key_figures=None, reviews=None, kf_exc=None, rev_exc=None, prop_detail=None):
     hass   = MagicMock()
     entry  = MagicMock()
     client = MagicMock()
@@ -202,6 +202,8 @@ def make_stats_coordinator(key_figures=None, reviews=None, kf_exc=None, rev_exc=
         client.get_reviews = AsyncMock(side_effect=rev_exc)
     else:
         client.get_reviews = AsyncMock(return_value=reviews or {})
+
+    client.get_property_detail = AsyncMock(return_value=prop_detail or {})
 
     return NovaSolStatsCoordinator(hass, entry, client, "D13051")
 
@@ -274,3 +276,55 @@ async def test_stats_empty_response_returns_all_none():
     for key in ("annual_income", "annual_guest_days", "annual_electricity",
                 "annual_occupancy", "review_score", "review_count"):
         assert data[key] is None
+
+
+# ── Review category scores ────────────────────────────────────────────────────
+
+async def test_stats_parses_overall_category_scores():
+    coord = make_stats_coordinator(reviews=REVIEWS_RESPONSE)
+    data = await coord._async_update_data()
+
+    assert data["review_cat_value_for_money"] == 4.0
+    assert data["review_cat_location"]        == 4.5
+    assert data["review_cat_facilities"]      == 5.0
+    assert data["review_cat_comfort"]         == 5.0
+    assert data["review_cat_cleanliness"]     == 4.5
+
+
+async def test_stats_category_scores_none_when_no_categories():
+    coord = make_stats_coordinator(reviews={"averageScore": 5, "numberOfReviews": 1})
+    data = await coord._async_update_data()
+
+    assert data["review_cat_value_for_money"] is None
+    assert data["review_cat_cleanliness"]     is None
+
+
+# ── Latest review ─────────────────────────────────────────────────────────────
+
+async def test_stats_parses_latest_review():
+    coord = make_stats_coordinator(reviews=REVIEWS_RESPONSE)
+    data = await coord._async_update_data()
+
+    assert data["latest_review_score"] == 5
+    assert data["latest_review_date"]  == "2026-04-26"
+    assert "schönes" in data["latest_review_text"]
+    assert data["latest_reviewer"]     == "Regula"
+
+
+async def test_stats_latest_review_none_when_empty_reviews():
+    coord = make_stats_coordinator(reviews={"averageScore": 5, "numberOfReviews": 0, "reviews": []})
+    data = await coord._async_update_data()
+
+    assert data["latest_review_score"] is None
+    assert data["latest_review_date"]  is None
+    assert data["latest_review_text"]  is None
+    assert data["latest_reviewer"]     is None
+
+
+async def test_stats_latest_reviewer_none_when_name_is_empty_string():
+    """Empty string reviewer name must be normalised to None."""
+    review_with_anon = {**REVIEWS_RESPONSE, "reviews": [REVIEWS_RESPONSE["reviews"][1]]}
+    coord = make_stats_coordinator(reviews=review_with_anon)
+    data = await coord._async_update_data()
+
+    assert data["latest_reviewer"] is None

@@ -194,12 +194,27 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
             or property_detail.get("arrival", {}).get("keyLocation", {}).get("keyCode")
         )
 
+        # Category aggregate scores (keyed by Feefo category id)
+        cats = {c["id"]: c["score"] for c in reviews.get("overallCategories", [])}
+
+        # Most recent individual review (API returns newest first)
+        latest = (reviews.get("reviews") or [None])[0]
+
         return {
-            "annual_income":      hire.get(year),
-            "annual_guest_days":  days.get(year),
-            "annual_electricity": elec.get(year),
-            "annual_occupancy":   occupancy,
-            "review_score":       reviews.get("averageScore"),
-            "review_count":       reviews.get("numberOfReviews"),
-            "keybox_code":        keybox_code,
+            "annual_income":              hire.get(year),
+            "annual_guest_days":          days.get(year),
+            "annual_electricity":         elec.get(year),
+            "annual_occupancy":           occupancy,
+            "review_score":               reviews.get("averageScore"),
+            "review_count":               reviews.get("numberOfReviews"),
+            "review_cat_value_for_money": cats.get("value-for-money"),
+            "review_cat_location":        cats.get("location"),
+            "review_cat_facilities":      cats.get("facilities"),
+            "review_cat_comfort":         cats.get("comfort"),
+            "review_cat_cleanliness":     cats.get("cleanliness"),
+            "latest_review_score":        latest["score"] if latest else None,
+            "latest_review_date":         latest["holidayDate"] if latest else None,
+            "latest_review_text":         (latest.get("review") or None) if latest else None,
+            "latest_reviewer":            (latest.get("reviewedBy", {}).get("name") or None) if latest else None,
+            "keybox_code":                keybox_code,
         }
