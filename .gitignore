@@ -10,3 +10,4 @@ dist/
 dev/
 tests/
 uv.lock
+pyproject.toml
