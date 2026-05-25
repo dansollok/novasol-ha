@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2] — 2026-05-25
+
+### Added
+
+- **Historical income sensors** — four new 24h sensors expose owner income for the previous four calendar years: `annual_income_1y_ago` through `annual_income_4y_ago`. Data comes from the `hire` dict already present in the key figures response — no extra API call. A year absent from the response (data not available) returns **0**; a full API failure (502/503/504) returns **None** so the sensor shows as unavailable rather than silently zeroing out.
+
+---
+
 ## [1.2.0] — 2026-05-24
 
 ### Added

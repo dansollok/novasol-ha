@@ -12,7 +12,7 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 ## Features
 
 - **Calendar entity** — all bookings visible in the HA calendar card, with guest name, nationality flag, party size, and owner income in the description
-- **Sensors** — 38 entities across two update cycles:
+- **Sensors** — 42 entities across two update cycles:
   - *Every 6 hours:* next guest details, current stay, party composition, booking financials, occupancy, and integration health
   - *Every 24 hours:* annual performance, key-box code, review averages per category, and full latest-review breakdown
 - **Binary sensor** — Occupancy (on when a guest is currently checked in, with guest details as attributes)
@@ -96,6 +96,10 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 | Entity | Description |
 |--------|-------------|
 | `sensor.novasol_XXXXX_annual_income` | Total owner hire income for the current calendar year (DKK) |
+| `sensor.novasol_XXXXX_annual_income_1y_ago` | Owner hire income for last calendar year (DKK) |
+| `sensor.novasol_XXXXX_annual_income_2y_ago` | Owner hire income 2 years ago (DKK) |
+| `sensor.novasol_XXXXX_annual_income_3y_ago` | Owner hire income 3 years ago (DKK) |
+| `sensor.novasol_XXXXX_annual_income_4y_ago` | Owner hire income 4 years ago (DKK) |
 | `sensor.novasol_XXXXX_annual_guest_days` | Total guest nights for the current calendar year |
 | `sensor.novasol_XXXXX_annual_electricity` | Electricity cost charged to owner for the current year (DKK) |
 | `sensor.novasol_XXXXX_annual_occupancy` | Occupancy rate for the current year — guest days as a percentage of available days (%) |
@@ -179,7 +183,7 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 ## Funktioner
 
 - **Kalender-enhed** — alle bookinger synlige i HA kalender-kortet, med gæstenavn, nationalitetsflag, antal personer og ejerindtægt i beskrivelsen
-- **Sensorer** — 38 entiteter fordelt på to opdateringscyklusser:
+- **Sensorer** — 42 entiteter fordelt på to opdateringscyklusser:
   - *Hvert 6. time:* næste gæsts detaljer, igangværende ophold, selskabsstørrelse, økonomi, belægning og integrationsstatus
   - *Hvert 24. time:* årsstatistik, nøgleboks kode, gennemsnitlige anmeldelsesscorer pr. kategori og fuld opdeling af seneste anmeldelse
 - **Binær sensor** — Belægning (tændt når en gæst er tjekket ind, med gæstedetaljer som attributter)
@@ -263,6 +267,10 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 | Entitet | Beskrivelse |
 |---------|-------------|
 | `sensor.novasol_XXXXX_annual_income` | Samlet ejerindtægt for indeværende kalenderår (DKK) |
+| `sensor.novasol_XXXXX_annual_income_1y_ago` | Ejerindtægt for sidste kalenderår (DKK) |
+| `sensor.novasol_XXXXX_annual_income_2y_ago` | Ejerindtægt for 2 år siden (DKK) |
+| `sensor.novasol_XXXXX_annual_income_3y_ago` | Ejerindtægt for 3 år siden (DKK) |
+| `sensor.novasol_XXXXX_annual_income_4y_ago` | Ejerindtægt for 4 år siden (DKK) |
 | `sensor.novasol_XXXXX_annual_guest_days` | Samlet antal gæstenætter for indeværende kalenderår |
 | `sensor.novasol_XXXXX_annual_electricity` | Elforbrug debiteret ejer for indeværende år (DKK) |
 | `sensor.novasol_XXXXX_annual_occupancy` | Belægningsprocent for indeværende år — gæstedage som andel af disponible dage (%) |

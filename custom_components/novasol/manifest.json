@@ -1,7 +1,7 @@
 {
   "domain": "novasol",
   "name": "Novasol",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "documentation": "https://github.com/dansollok/novasol-ha",
   "codeowners": ["@dansollok"],
   "requirements": [],
