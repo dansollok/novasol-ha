@@ -9,3 +9,4 @@ dist/
 .env
 dev/
 tests/
+uv.lock
