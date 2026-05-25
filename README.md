@@ -96,10 +96,10 @@ Syncs your rental bookings as a calendar and exposes sensors for upcoming guests
 | Entity | Description |
 |--------|-------------|
 | `sensor.novasol_XXXXX_annual_income` | Total owner hire income for the current calendar year (DKK) |
-| `sensor.novasol_XXXXX_annual_income_1y_ago` | Owner hire income for last calendar year (DKK) |
-| `sensor.novasol_XXXXX_annual_income_2y_ago` | Owner hire income 2 years ago (DKK) |
-| `sensor.novasol_XXXXX_annual_income_3y_ago` | Owner hire income 3 years ago (DKK) |
-| `sensor.novasol_XXXXX_annual_income_4y_ago` | Owner hire income 4 years ago (DKK) |
+| `sensor.novasol_XXXXX_income_1_year_ago` | Owner hire income for last calendar year (DKK) |
+| `sensor.novasol_XXXXX_income_2_years_ago` | Owner hire income 2 years ago (DKK) |
+| `sensor.novasol_XXXXX_income_3_years_ago` | Owner hire income 3 years ago (DKK) |
+| `sensor.novasol_XXXXX_income_4_years_ago` | Owner hire income 4 years ago (DKK) |
 | `sensor.novasol_XXXXX_annual_guest_days` | Total guest nights for the current calendar year |
 | `sensor.novasol_XXXXX_annual_electricity` | Electricity cost charged to owner for the current year (DKK) |
 | `sensor.novasol_XXXXX_annual_occupancy` | Occupancy rate for the current year — guest days as a percentage of available days (%) |
@@ -267,10 +267,10 @@ Synkroniserer dine udlejningsbookinger som en kalender og viser sensorer for kom
 | Entitet | Beskrivelse |
 |---------|-------------|
 | `sensor.novasol_XXXXX_annual_income` | Samlet ejerindtægt for indeværende kalenderår (DKK) |
-| `sensor.novasol_XXXXX_annual_income_1y_ago` | Ejerindtægt for sidste kalenderår (DKK) |
-| `sensor.novasol_XXXXX_annual_income_2y_ago` | Ejerindtægt for 2 år siden (DKK) |
-| `sensor.novasol_XXXXX_annual_income_3y_ago` | Ejerindtægt for 3 år siden (DKK) |
-| `sensor.novasol_XXXXX_annual_income_4y_ago` | Ejerindtægt for 4 år siden (DKK) |
+| `sensor.novasol_XXXXX_income_1_year_ago` | Ejerindtægt for sidste kalenderår (DKK) |
+| `sensor.novasol_XXXXX_income_2_years_ago` | Ejerindtægt for 2 år siden (DKK) |
+| `sensor.novasol_XXXXX_income_3_years_ago` | Ejerindtægt for 3 år siden (DKK) |
+| `sensor.novasol_XXXXX_income_4_years_ago` | Ejerindtægt for 4 år siden (DKK) |
 | `sensor.novasol_XXXXX_annual_guest_days` | Samlet antal gæstenætter for indeværende kalenderår |
 | `sensor.novasol_XXXXX_annual_electricity` | Elforbrug debiteret ejer for indeværende år (DKK) |
 | `sensor.novasol_XXXXX_annual_occupancy` | Belægningsprocent for indeværende år — gæstedage som andel af disponible dage (%) |
