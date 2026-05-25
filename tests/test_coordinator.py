@@ -232,6 +232,41 @@ async def test_stats_parses_key_figures_for_current_year():
     assert data["annual_occupancy"]   == round(68 / (365 - 211) * 100, 1)
 
 
+async def test_stats_historical_income_present_years():
+    """Years present in the hire dict are returned as-is."""
+    y = date.today().year
+    hire = {str(y - i): (10000 * (5 - i)) for i in range(5)}
+    kf = {"figures": {"hire": hire, "days": {}, "electricity": {}}, "events": {}}
+    coord = make_stats_coordinator(key_figures=kf)
+    data = await coord._async_update_data()
+
+    assert data["annual_income_1y_ago"] == hire[str(y - 1)]
+    assert data["annual_income_2y_ago"] == hire[str(y - 2)]
+    assert data["annual_income_3y_ago"] == hire[str(y - 3)]
+    assert data["annual_income_4y_ago"] == hire[str(y - 4)]
+
+
+async def test_stats_historical_income_absent_year_returns_zero():
+    """A year absent from the hire dict (data not available) becomes 0."""
+    y = date.today().year
+    kf = {"figures": {"hire": {str(y): 50000}, "days": {}, "electricity": {}}, "events": {}}
+    coord = make_stats_coordinator(key_figures=kf)
+    data = await coord._async_update_data()
+
+    assert data["annual_income_1y_ago"] == 0
+    assert data["annual_income_4y_ago"] == 0
+
+
+async def test_stats_historical_income_none_when_api_fails():
+    """If the key_figures call fails entirely, all income fields are None."""
+    coord = make_stats_coordinator(kf_exc=Exception("502 Bad Gateway"))
+    data = await coord._async_update_data()
+
+    assert data["annual_income"]        is None
+    assert data["annual_income_1y_ago"] is None
+    assert data["annual_income_4y_ago"] is None
+
+
 async def test_stats_parses_reviews():
     rev = {"averageScore": 4.5, "numberOfReviews": 10}
     coord = make_stats_coordinator(reviews=rev)

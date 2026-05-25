@@ -158,8 +158,10 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
         year = str(date.today().year)
 
         key_figures: dict = {}
+        kf_ok = False
         try:
             key_figures = await self._client.get_key_figures(self.property_id)
+            kf_ok = True
         except Exception as exc:
             _LOGGER.warning("Failed to fetch key figures: %s", exc)
 
@@ -194,6 +196,13 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
             or property_detail.get("arrival", {}).get("keyLocation", {}).get("keyCode")
         )
 
+        # Historical income: 0 when year absent from response, None when API failed entirely
+        year_int = date.today().year
+        def _hire(offset: int) -> int | None:
+            if not kf_ok:
+                return None
+            return hire.get(str(year_int - offset), 0)
+
         # Category aggregate scores (keyed by Feefo category id)
         cats = {c["id"]: c["score"] for c in reviews.get("overallCategories", [])}
 
@@ -203,6 +212,10 @@ class NovaSolStatsCoordinator(DataUpdateCoordinator):
 
         return {
             "annual_income":                        hire.get(year),
+            "annual_income_1y_ago":                 _hire(1),
+            "annual_income_2y_ago":                 _hire(2),
+            "annual_income_3y_ago":                 _hire(3),
+            "annual_income_4y_ago":                 _hire(4),
             "annual_guest_days":                    days.get(year),
             "annual_electricity":                   elec.get(year),
             "annual_occupancy":                     occupancy,
